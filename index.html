@@ -1,0 +1,430 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Last Stand 3D - Boss Reflex UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Rajdhani:wght@700&display=swap">
+<link rel="stylesheet" href="css/00-base-hud-screens.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/10-meta-shop.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/20-skins-textures-fx.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/30-skin-fx-overrides.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/40-content-missions-chest-world.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=boss-reflex-ui-v137">
+<link rel="stylesheet" href="css/90-late-overrides.css?v=boss-reflex-ui-v137">
+</head>
+<body>
+<div id="hud">
+  <div id="prog-bg"><div id="prog-fill"></div></div>
+  <div id="hud-row">
+    <div id="crowd-lbl">12 HUMANS</div>
+    <div id="dist-lbl">LEVEL 1</div>
+  </div>
+</div>
+<div id="combo-bar">
+  <div class="combo-dot" id="cd0"></div>
+  <div class="combo-dot" id="cd1"></div>
+  <div class="combo-dot" id="cd2"></div>
+  <div class="combo-dot" id="cd3"></div>
+  <div class="combo-dot" id="cd4"></div>
+</div>
+<div id="consequence-bar">
+  <div id="cq-left">UP +10</div>
+  <div id="cq-right">DOWN -8</div>
+</div>
+<div id="streak-hud">
+  <div id="streak-lbl">STREAK</div>
+  <div id="streak-val">x0</div>
+</div>
+<div id="floats"></div>
+<div id="danger-edge"></div>
+<div id="dodge-warn">DODGE!</div>
+<div id="boss-hud">
+  <div id="boss-title">AI ARMY INCOMING</div>
+  <div id="boss-bg"><div id="boss-fill" style="width:100%"></div></div>
+</div>
+<div id="clash-counts">
+  <div class="clash-card human">
+    <div class="clash-label">HUMANS</div>
+    <div class="clash-num" id="human-count-num">0</div>
+    <div class="loss-pop" id="human-loss"></div>
+  </div>
+  <div class="clash-vs">VS</div>
+  <div class="clash-card ai">
+    <div class="clash-label">AI</div>
+    <div class="clash-num" id="ai-count-num">0</div>
+    <div class="loss-pop" id="ai-loss"></div>
+  </div>
+</div>
+
+<div id="boss-tap-zone" aria-hidden="true">
+  <div class="boss-mini-card">
+    <div id="boss-tap-hint">REFLEX!</div>
+    <div id="boss-mini-timer"><div id="boss-mini-time-fill"></div></div>
+    <div id="boss-mini-prompt">READY</div>
+    <div id="boss-mini-instruction">SWIPE OR TAP</div>
+    <div class="boss-mini-stats">
+      <div id="boss-mini-combo">0</div>
+      <div id="boss-mini-damage">0</div>
+      <div id="boss-mini-misses">0/4</div>
+    </div>
+    <div id="boss-tap-meter"><div id="boss-tap-fill"></div></div>
+    <div id="boss-tap-caption">FAST -2 | LATE -1 | ! MISS</div>
+    <div id="boss-mini-feedback"></div>
+  </div>
+</div>
+<div id="phase-flash"></div>
+<div id="reward-flash"></div>
+<div id="vignette"></div>
+<div class="debug-safe-badge">BOSS REFLEX UI</div>
+<div id="milestone-banner">
+  <div class="m-txt" id="m-txt"></div>
+  <div class="m-sub" id="m-sub"></div>
+</div>
+<div class="chest-popup" id="chest-popup">
+  <div class="chest-box" id="chest-box">
+    <div class="chest-light-burst" id="chest-light-burst"></div>
+    <div class="reward-icon icon-chest" id="reward-popup-icon" aria-hidden="true"></div>
+    <h3 id="reward-popup-title">BOSS CHEST</h3>
+    <p id="chest-popup-text">Reward unlocked.</p>
+    <button class="btn btn-green" id="chest-claim-btn" onclick="closeChestPopup()">CLAIMED</button>
+  </div>
+</div>
+<div class="world-unlock-popup" id="world-unlock-popup" aria-hidden="true">
+  <div class="world-unlock-box">
+    <div class="world-unlock-kicker">NEW PLANET UNLOCKED</div>
+    <div class="world-unlock-title" id="world-unlock-name">Frozen Moon</div>
+    <div class="world-unlock-level" id="world-unlock-level">LEVEL 30 ROAD</div>
+    <div class="world-unlock-preview" aria-hidden="true">
+      <div class="world-unlock-orb"></div>
+      <div class="world-unlock-road"></div>
+    </div>
+    <div class="world-unlock-bonus" id="world-unlock-bonus">PLANET BONUS +300 COINS</div>
+    <div class="world-unlock-message" id="world-unlock-message">New planet unlocked.</div>
+    <button class="world-unlock-btn" onclick="hideWorldUnlockCinematic()">ENTER WORLD</button>
+  </div>
+</div>
+
+<div class="screen ui-clean-v52" id="s-menu" onclick="handleMenuTap(event)">
+  <div class="meta-top">
+    <div class="meta-cluster">
+      <div class="meta-pill blue">LVL <span id="ui-level">1</span></div>
+      <div class="meta-pill">BEST <span id="ui-best">0</span></div>
+    </div>
+    <div class="meta-cluster">
+      <button class="meta-pill sound-pill perf-pill" id="perf-toggle" onclick="toggleQuality(event)" type="button">HD</button>
+      <button class="meta-pill sound-pill" id="sound-toggle" onclick="toggleSound(event)" type="button">SOUND ON</button>
+      <div class="meta-pill gold"><span class="ui-icon icon-coin" aria-hidden="true"></span><span id="ui-coins">0</span></div>
+    </div>
+  </div>
+  <div class="menu-stage-track menu-action">
+    <div class="stage-track-title">LEVEL <span id="menu-level-label">1</span></div>
+    <div class="stage-track-bar">
+      <span class="stage-node active"></span>
+      <span class="stage-node active"></span>
+      <span class="stage-node active"></span>
+      <span class="stage-node"></span>
+      <span class="stage-node skull">SKULL</span>
+      <span class="stage-node skull">SKULL</span>
+    </div>
+  </div>
+  <div class="menu-shell v14">
+    <div class="hero-panel v14">
+      <div class="title-row">
+        <div>
+          <div class="gtitle v14">LAST STAND 3D</div>
+          <div class="gsub v14">Grow. Fight. Survive.</div>
+        </div>
+        <div class="season-chip">SMART REWARD</div>
+      </div>
+      <div class="hero-stage">
+        <div class="active-label">ACTIVE TEAM</div>
+        <div class="active-name" id="preview-active-name">DEFAULT</div>
+        <div class="preview-ring"></div>
+        <div class="preview-squad" id="preview-squad"></div>
+      </div>
+      <div class="hero-stats v14">
+        <div class="hero-stat v14"><span>START</span><b id="ui-start-preview">1</b></div>
+        <div class="hero-stat v14"><span>SKINS</span><b id="ui-skins-owned">1/9</b></div>
+      </div>
+      <div class="tap-start-hint"><div class="tap-main">PLAY A FAST RUN</div><div class="tap-sub">DRAG LEFT / RIGHT TO MOVE</div></div>
+      <div class="next-run-goal-card" id="next-run-goal-card">
+        <div class="goal-kid-icon" aria-hidden="true"></div>
+        <div class="goal-kid-copy">
+          <div class="goal-kid-label">GIFT</div>
+          <div class="goal-kid-title" id="next-goal-title">Reach 120 humans</div>
+          <div class="goal-kid-progress"><span id="next-goal-progress">0/120</span><b id="next-goal-reward">+180 COINS</b></div>
+          <div class="mini-bar goal-bar"><div class="mini-fill" id="next-goal-fill"></div></div>
+        </div>
+      </div>
+      <div class="play-row">
+        <button class="btn btn-blue play-big v14" onclick="startGame()"><span class="ui-icon icon-play" aria-hidden="true"></span>PLAY</button>
+        <button class="mini-shop-btn" onclick="openShop()"><span class="ui-icon icon-skins" aria-hidden="true"></span>SHOP</button>
+      </div>
+      <div class="next-skin-mini v14">
+        <div class="next-row"><span id="next-skin-text">Next skin progress</span><span id="next-skin-percent">0%</span></div>
+        <div class="mini-bar"><div class="mini-fill" id="next-skin-fill"></div></div>
+      </div>
+      <div class="hero-extra-stack">
+        <div class="content-card chest-card" id="boss-chest-card">
+          <div class="chest-visual">
+            <div class="chest-icon"><span class="ui-icon icon-chest" aria-hidden="true"></span></div>
+            <div class="chest-info"><b id="boss-chest-title">Boss Chest</b><span id="boss-chest-sub">Win 3 levels to open.</span><div class="tiny-bar"><div class="tiny-fill" id="boss-chest-fill"></div></div></div>
+            <button class="content-btn not-ready" id="boss-chest-action" onclick="claimBossChest()">0/3</button>
+          </div>
+        </div>
+        <div class="content-card world-card" id="next-world-card">
+          <div class="world-row">
+            <div class="world-orb" id="world-orb"></div>
+            <div class="world-text"><b id="world-title">Next World</b><span id="world-sub">Keep winning to unlock.</span><div class="tiny-bar"><div class="tiny-fill" id="world-fill"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content-panel v14 menu-action">
+      <div class="content-stack">
+        <div class="daily-card next-reward-card">
+          <b><span class="ui-icon icon-gift" aria-hidden="true"></span>Daily Gift</b>
+          <span id="daily-goal-text">Checking server time...</span>
+          <div class="mini-bar"><div class="mini-fill" id="daily-goal-fill"></div></div>
+        </div>
+        <div class="content-card mission-card">
+          <div class="content-head"><div class="content-title"><span class="ui-icon icon-missions" aria-hidden="true"></span>MISSIONS</div><div class="content-sub">auto reward</div></div>
+          <div class="mission-list" id="mission-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side-actions v14 menu-action">
+      <button class="side-btn skin v14" onclick="openShop()"><span class="ui-icon icon-skins" aria-hidden="true"></span><span>SKINS<small>buy / equip</small></span></button>
+      <button class="side-btn v14" id="quick-chest-btn" onclick="claimBossChest()"><span class="ui-icon icon-chest" aria-hidden="true"></span><span>CHEST<small id="chest-button-sub">0/3 wins</small></span></button>
+    </div>
+  </div>
+
+  <div class="mobile-bottom-dock menu-action" id="mobile-bottom-dock" onclick="event.stopPropagation()">
+    <button class="mobile-dock-btn mobile-dock-map" id="dock-map-btn" type="button" onclick="dockOpenSpaceMap(event)"><span class="ui-icon icon-map" aria-hidden="true"></span><span>MAP</span></button>
+    <button class="mobile-dock-btn mobile-dock-play" id="dock-play-btn" type="button" onclick="dockStartGame(event)"><span class="ui-icon icon-play" aria-hidden="true"></span><span>PLAY</span></button>
+    <button class="mobile-dock-btn mobile-dock-skins" id="dock-skins-btn" type="button" onclick="dockOpenShop(event)"><span class="ui-icon icon-skins" aria-hidden="true"></span><span>SKINS</span></button>
+  </div>
+  <div class="space-map-overlay menu-action" id="space-map-overlay" aria-hidden="true" onclick="spaceMapBackdropTap(event)">
+    <div class="space-map-panel" role="dialog" aria-modal="true" aria-label="Space Map" onclick="event.stopPropagation()">
+      <button class="space-map-close" type="button" onclick="closeSpaceMap(event)">X</button>
+      <div class="space-map-head">
+        <div>
+          <div class="space-map-kicker">SPACE MAP</div>
+          <div class="space-map-title">Choose Your Planet</div>
+        </div>
+        <div class="space-map-level" id="space-map-level">LVL 1</div>
+      </div>
+      <div class="space-map-unlock-box world-unlock-box" id="space-map-unlock-box" aria-hidden="true">
+        <div class="world-unlock-kicker">NEW PLANET UNLOCKED</div>
+        <div class="world-unlock-title" id="space-map-unlock-name">Frozen Moon</div>
+        <div class="world-unlock-level" id="space-map-unlock-level">LEVEL 30 ROAD</div>
+        <div class="world-unlock-preview" aria-hidden="true">
+          <div class="world-unlock-orb"></div>
+          <div class="world-unlock-road"></div>
+        </div>
+        <div class="world-unlock-bonus" id="space-map-unlock-bonus">SELECTED</div>
+        <div class="world-unlock-message" id="space-map-unlock-message">NEW WORLD READY</div>
+        <button class="world-unlock-btn" type="button" onclick="closeSpaceMapUnlockBox(event)">OK</button>
+      </div>
+      <div class="space-map-system" id="space-map-planets"></div>
+      <div class="space-map-preview" id="space-map-preview" aria-live="polite"></div>
+      <div class="space-map-caption" id="space-map-caption">Planets unlock every 30 levels.</div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="s-shop">
+  <div class="meta-top">
+    <div class="meta-cluster"><button class="shop-back" onclick="closeShop()"><span class="ui-icon icon-back" aria-hidden="true"></span></button></div>
+    <div class="meta-cluster"><div class="meta-pill gold"><span class="ui-icon icon-coin" aria-hidden="true"></span><span id="shop-coins">0</span></div></div>
+  </div>
+  <div class="shop-shell v14">
+    <div class="shop-title v14">SHOP</div>
+    <div class="shop-panel">
+      <div class="shop-tabs"><button class="shop-tab active"><span class="ui-icon icon-skins" aria-hidden="true"></span>SHOPS</button><button class="shop-tab" id="shop-chest-tab" onclick="claimBossChest()"><span class="ui-icon icon-chest" aria-hidden="true"></span><span id="shop-chest-tab-text">CHEST 0/3</span></button></div>
+      <div class="shop-grid v14" id="skin-grid"></div>
+    </div>
+    <div class="shop-preview-panel">
+      <div class="big-skin-stage" id="big-skin-stage">
+        <div class="skin-rarity-big" id="skin-rarity-big">COMMON</div>
+        <div class="big-skin" id="big-skin-preview"></div>
+      </div>
+      <div class="shop-detail v14">
+        <div class="shop-name v14"><b id="skin-detail-name">Default</b><span id="skin-detail-desc">Owned</span></div>
+        <div class="shop-progress" id="shop-progress">
+          <div class="shop-progress-label"><span id="shop-progress-text">Progress</span><span id="shop-progress-percent">0%</span></div>
+          <div class="mini-bar"><div class="mini-fill" id="shop-progress-fill"></div></div>
+        </div>
+        <button class="shop-action equip" id="skin-action" onclick="skinAction()">EQUIPPED</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="s-over">
+    <div class="result-wallet result-page-wallet" id="over-total-wallet"><span class="ui-icon icon-coin" aria-hidden="true"></span><span id="over-total-coins">0</span></div>
+  <div class="result-panel">
+    <h2 id="over-title">MISSION FAILED</h2>
+    <p id="over-msg">The AI Army crushed your resistance.<br>Humanity still needs you.</p>
+    <div class="fail-tip-card" id="over-fail-tip">
+      <div class="fail-tip-block"><span>WHY?</span><b id="fail-reason">Small team</b></div>
+      <div class="fail-tip-arrow"></div>
+      <div class="fail-tip-block"><span>TIP</span><b id="fail-fix">Build a bigger team</b></div>
+    </div>
+    <div class="result-close-hook" id="over-close-hook">
+      <div class="close-head"><span>YOU WERE THIS CLOSE</span><b id="over-dist-pct">0%</b></div>
+      <div class="close-track"><div class="close-fill" id="over-dist-fill"></div><div class="close-boss-dot">AI</div></div>
+      <div class="close-gap" id="over-dist-gap">Reach the final clash with a bigger team.</div>
+    </div>
+    <div class="result-coins" id="over-coins">+0 COINS</div>
+    <div class="result-combo" id="over-combo-bonus">0</div>
+    <div class="result-goal" id="over-goal-result">GOAL 0/0</div>
+    <div class="result-sub" id="over-sub">Try again with cleaner gates.</div>
+    <div class="result-next" id="over-next-skin">
+      <div id="over-next-text">Next skin progress</div>
+      <div class="mini-bar"><div class="mini-fill" id="over-next-fill"></div></div>
+    </div>
+    <div class="result-chest" id="over-chest-result">Win levels to charge the Boss Chest.</div>
+    <div class="one-more-hook" id="over-one-more-hook"><div class="one-more-kicker">ONE MORE RUN</div><div class="one-more-title" id="over-one-more-title">Try a cleaner route</div><div class="one-more-sub" id="over-one-more-sub">Good gates and dodges can flip the next fight.</div></div>
+    <div class="result-bonus-card" id="over-result-bonus" aria-hidden="true">
+      <div class="result-bonus-topline" data-role="title">RUN BONUS</div>
+      <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
+      <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
+        <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
+        <div class="result-bonus-zone zone-x3"><b>x3</b><small>RARE</small></div>
+        <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
+        <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
+        <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
+        <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
+      </div>
+      <div class="result-bonus-actions">
+        <button class="result-bonus-claim" type="button" onclick="claimPostGameReward()">
+          <span data-role="action">TAP TO STOP</span>
+          <b><em data-role="final">READY</em></b>
+          <small>AUTO CLAIM</small>
+        </button>
+      </div>
+    </div>
+    <div class="result-row">
+      <button class="btn btn-red btn-small" onclick="continueToMenu()"><span class="ui-icon icon-back" aria-hidden="true"></span>MENU</button>
+      <button class="btn btn-blue btn-small" onclick="startGame()"><span class="ui-icon icon-play" aria-hidden="true"></span>TRY</button>
+    </div>
+  </div>
+</div>
+<div class="screen" id="s-win">
+    <div class="result-wallet result-page-wallet" id="win-total-wallet"><span class="ui-icon icon-coin" aria-hidden="true"></span><span id="win-total-coins">0</span></div>
+  <div class="result-panel">
+    <h2 id="win-title">AI ARMY DESTROYED!</h2>
+    <div class="stars" id="win-stars">RANK SSS</div>
+    <p id="win-msg">Humanity survives!</p>
+    <div class="result-coins" id="win-coins">+0 COINS</div>
+    <div class="result-combo" id="win-combo-bonus">0</div>
+    <div class="result-goal" id="win-goal-result">GOAL 0/0</div>
+    <div class="result-sub" id="win-sub">Level complete. Keep the streak going.</div>
+    <div class="result-next" id="win-next-skin">
+      <div id="win-next-text">Next skin progress</div>
+      <div class="mini-bar"><div class="mini-fill" id="win-next-fill"></div></div>
+    </div>
+    <div class="result-chest" id="win-chest-result">Boss chest: 0/3 wins</div>
+    <div class="result-world" id="win-world-result">World progress</div>
+    <div class="one-more-hook" id="win-one-more-hook"><div class="one-more-kicker">ONE MORE RUN</div><div class="one-more-title" id="win-one-more-title">You are close to a reward</div><div class="one-more-sub" id="win-one-more-sub">Play again to unlock more.</div></div>
+    <div class="result-bonus-card" id="win-result-bonus" aria-hidden="true">
+      <div class="result-bonus-topline" data-role="title">BOSS BONUS</div>
+      <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
+      <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
+        <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
+        <div class="result-bonus-zone zone-x3"><b>x3</b><small>RARE</small></div>
+        <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
+        <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
+        <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
+        <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
+      </div>
+      <div class="result-bonus-actions">
+        <button class="result-bonus-claim" type="button" onclick="claimPostGameReward()">
+          <span data-role="action">TAP TO STOP</span>
+          <b><em data-role="final">READY</em></b>
+          <small>AUTO CLAIM</small>
+        </button>
+      </div>
+    </div>
+    <div class="result-row">
+      <button class="btn btn-green btn-small" onclick="continueToMenu()"><span class="ui-icon icon-back" aria-hidden="true"></span>MENU</button>
+      <button class="btn btn-blue btn-small" id="win-play-btn" onclick="startGame()"><span class="ui-icon icon-play" aria-hidden="true"></span>PLAY</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="dev-open-pill" title="Open developer test tools">DEV</div>
+<div id="dev-tools" aria-label="Developer test tools">
+  <div class="dev-head">
+    <div class="dev-title">DEV TOOLS</div>
+    <div class="dev-chip" id="dev-state-chip">MENU</div>
+    <button class="dev-close" data-dev-action="close" title="Close">x</button>
+  </div>
+  <div class="dev-body">
+    <div class="dev-section">
+      <div class="dev-section-title">Live state <span class="dev-readout" id="dev-live-readout">loading</span></div>
+      <div class="dev-grid">
+        <input id="dev-level-input" type="number" min="1" value="1" title="Level">
+        <input id="dev-coins-input" type="number" min="0" value="0" title="Coins">
+        <input id="dev-crowd-input" type="number" min="1" value="100" title="Crowd">
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-section-title">Progress / economy</div>
+      <div class="dev-grid">
+        <button class="dev-tools-btn blue" data-dev-action="set-level">SET LEVEL</button>
+        <button class="dev-tools-btn gold" data-dev-action="set-coins">SET COINS</button>
+        <button class="dev-tools-btn green" data-dev-action="set-crowd">SET CROWD</button>
+        <button class="dev-tools-btn dark" data-dev-action="level-down">LVL -1</button>
+        <button class="dev-tools-btn dark" data-dev-action="level-up">LVL +1</button>
+        <button class="dev-tools-btn gold" data-dev-action="coins-10k">+10K</button>
+        <button class="dev-tools-btn gold" data-dev-action="coins-100k">+100K</button>
+        <button class="dev-tools-btn red" data-dev-action="reset-save">RESET SAVE</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-section-title">Skins</div>
+      <div class="dev-grid">
+        <button class="dev-tools-btn green" data-dev-action="unlock-skins">UNLOCK ALL</button>
+        <button class="dev-tools-btn purple" data-dev-action="equip-shadow">EQUIP SHADOW</button>
+        <button class="dev-tools-btn blue" data-dev-action="shop">OPEN SHOP</button>
+      </div>
+    </div>
+
+
+    <div class="dev-section">
+      <div class="dev-section-title">World themes</div>
+      <div class="dev-grid worlds" id="dev-world-buttons"></div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-section-title">Gameplay tests</div>
+      <div class="dev-grid">
+        <button class="dev-tools-btn green" data-dev-action="start-run">START RUN</button>
+        <button class="dev-tools-btn purple" data-dev-action="boss-now">BOSS NOW</button>
+        <button class="dev-tools-btn dark" data-dev-action="menu">MENU</button>
+        <button class="dev-tools-btn green" data-dev-action="win-now">WIN NOW</button>
+        <button class="dev-tools-btn red" data-dev-action="lose-now">LOSE NOW</button>
+        <button class="dev-tools-btn blue" data-dev-action="reward-flash">FLASH FX</button>
+      </div>
+    </div>
+
+    <div class="dev-status" id="dev-status">Press F2 or the DEV pill to open/close. Changes are saved in localStorage.</div>
+  </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/core/game.js?v=boss-reflex-ui-v137"></script>
+<script src="js/ui/mobile-bottom-dock.js?v=boss-reflex-ui-v137"></script>
+</body>
+</html>
+
