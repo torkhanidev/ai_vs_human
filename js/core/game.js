@@ -33,6 +33,59 @@ const C={
   ]
 };
 
+const DIFFICULTY_LEVEL_OFFSET=2;
+function gameplayDifficultyLevel(level){
+  const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
+  return playerLv+DIFFICULTY_LEVEL_OFFSET;
+}
+
+function drawGatePersonIcon(ctx,x,y,s,opt={}){
+  const alpha=opt.alpha==null?1:opt.alpha;
+  const fill=opt.fill||'#fff';
+  const stroke=opt.stroke||'rgba(0,0,0,.72)';
+  ctx.save();
+  ctx.globalAlpha*=alpha;
+  ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.shadowColor=opt.glow||fill;ctx.shadowBlur=opt.glowBlur==null?16:opt.glowBlur;
+  ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=7*s;
+  ctx.beginPath();ctx.arc(x,y-31*s,15*s,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();
+  if(ctx.roundRect)ctx.roundRect(x-19*s,y-12*s,38*s,54*s,15*s); else ctx.rect(x-19*s,y-12*s,38*s,54*s);
+  ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-15*s,y+39*s);ctx.lineTo(x-31*s,y+70*s);ctx.moveTo(x+15*s,y+39*s);ctx.lineTo(x+31*s,y+70*s);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-18*s,y+2*s);ctx.lineTo(x-43*s,y+22*s);ctx.moveTo(x+18*s,y+2*s);ctx.lineTo(x+43*s,y+22*s);ctx.stroke();
+  if(opt.slash){ctx.shadowColor='#FF1744';ctx.shadowBlur=18;ctx.strokeStyle='#FF1744';ctx.lineWidth=10*s;ctx.beginPath();ctx.moveTo(x-48*s,y+62*s);ctx.lineTo(x+48*s,y-64*s);ctx.stroke();}
+  ctx.restore();
+}
+
+function drawGateDangerIcon(ctx,x,y,s,tc){
+  ctx.save();
+  const c=tc||'#FFD740';
+  ctx.shadowColor=c;ctx.shadowBlur=30;ctx.fillStyle='rgba(255,215,64,.96)';
+  ctx.strokeStyle='rgba(0,0,0,.74)';ctx.lineWidth=12*s;
+  ctx.beginPath();ctx.moveTo(x,y-70*s);ctx.lineTo(x+78*s,y+66*s);ctx.lineTo(x-78*s,y+66*s);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;ctx.fillStyle='#190018';ctx.font=`900 ${94*s}px "Arial Black",Impact,Arial`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',x,y+8*s);
+  ctx.restore();
+}
+
+function drawGateCopyIcon(ctx,x,y,s,tc){
+  ctx.save();
+  ctx.fillStyle='rgba(255,215,64,.18)';ctx.beginPath();ctx.arc(x,y+8*s,96*s,0,Math.PI*2);ctx.fill();
+  drawGatePersonIcon(ctx,x-38*s,y+5*s,s,{fill:'#fff',glow:tc||'#FFD740'});
+  drawGatePersonIcon(ctx,x+42*s,y+5*s,s,{fill:'#FFF176',glow:tc||'#FFD740'});
+  ctx.restore();
+}
+
+function drawGateHalfIcon(ctx,x,y,s,tc){
+  ctx.save();
+  ctx.fillStyle='rgba(234,128,252,.14)';ctx.beginPath();ctx.arc(x,y+10*s,102*s,0,Math.PI*2);ctx.fill();
+  drawGateDangerIcon(ctx,x,y-44*s,.62*s,tc||'#EA80FC');
+  drawGatePersonIcon(ctx,x-42*s,y+44*s,.76*s,{fill:'#fff',glow:tc||'#EA80FC'});
+  drawGatePersonIcon(ctx,x+44*s,y+44*s,.76*s,{fill:'#C6B6FF',alpha:.34,slash:true,glow:tc||'#EA80FC'});
+  ctx.restore();
+}
+
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PERF â€” Mobile detection (one flag, set once at startup)
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
@@ -698,31 +751,98 @@ function readFirstSave(){
 }
 function num(v,fallback=0){v=Number(v);return Number.isFinite(v)?v:fallback;}
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function levelCurveValue(playerLv,earlyValues,afterStep,maxValue){
+  playerLv=Math.max(1,Math.round(num(playerLv,1)));
+  if(playerLv<=earlyValues.length)return earlyValues[playerLv-1];
+  return Math.min(maxValue,earlyValues[earlyValues.length-1]+(playerLv-earlyValues.length)*afterStep);
+}
+function targetHumansCurve(playerLv){
+  return levelCurveValue(playerLv,[120,130,145,160,175],8,240);
+}
+function requiredGoodCurve(playerLv){
+  const v=levelCurveValue(playerLv,[.55,.64,.65,.67,.69],.012,.76);
+  return Math.round(v*100)/100;
+}
+function bossMinAICurve(playerLv){
+  return levelCurveValue(playerLv,[28,34,42,50,60],6,150);
+}
+function bossWinMultCurve(playerLv){
+  const v=levelCurveValue(playerLv,[.36,.38,.40,.42,.44],.01,.56);
+  return Math.round(v*100)/100;
+}
+function bossLoseMultCurve(playerLv){
+  const v=levelCurveValue(playerLv,[1.18,1.25,1.33,1.42,1.52],.045,1.95);
+  return Math.round(v*100)/100;
+}
+function pacingCurveValue(playerLv,earlyValues,afterStep,limitValue){
+  playerLv=Math.max(1,Math.round(num(playerLv,1)));
+  if(playerLv<=earlyValues.length)return earlyValues[playerLv-1];
+  const raw=earlyValues[earlyValues.length-1]+(playerLv-earlyValues.length)*afterStep;
+  return afterStep<0?Math.max(limitValue,raw):Math.min(limitValue,raw);
+}
+function runSpeedCurve(playerLv){
+  const v=pacingCurveValue(playerLv,[.94,.98,1.00,1.02,1.04],.005,1.08);
+  return Math.round(v*100)/100;
+}
+function runRampCurve(playerLv){
+  const v=pacingCurveValue(playerLv,[.35,.65,.82,.94,1.00],0,1);
+  return Math.round(v*100)/100;
+}
+function gateSpacingCurve(playerLv){
+  const v=pacingCurveValue(playerLv,[1.18,1.08,1.03,1.00,.98],-.01,.92);
+  return Math.round(v*100)/100;
+}
+function obstacleSpacingCurve(playerLv){
+  const v=pacingCurveValue(playerLv,[1.35,1.35,1.24,1.16,1.10],-.015,1);
+  return Math.round(v*100)/100;
+}
+function forcedSpacingCurve(playerLv){
+  const v=pacingCurveValue(playerLv,[1.30,1.30,1.30,1.25,1.16],-.02,1);
+  return Math.round(v*100)/100;
+}
+function firstGateZCurve(playerLv){return Math.round(pacingCurveValue(playerLv,[42,38,36,34,32],-1,30));}
+function firstOrbZCurve(playerLv){return Math.round(pacingCurveValue(playerLv,[18,32,40,45,45],0,45));}
+function firstObstacleZCurve(playerLv){return Math.round(pacingCurveValue(playerLv,[999999,150,126,106,90],-2,84));}
+function firstForcedZCurve(playerLv){return Math.round(pacingCurveValue(playerLv,[999999,999999,999999,180,148],-4,118));}
 function runDifficultyProfile(level){
-  const lv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
+  const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
+  const lv=gameplayDifficultyLevel(playerLv);
   return{
     level:lv,
-    allowGates:lv>=2,
-    allowBadGates:lv>=3,
-    allowObstacles:lv>=4,
-    allowBossMini:lv>=5,
-    allowForcedItems:lv>=6,
-    allowMult:lv>=4,
-    allowMaxGate:lv>=7,
-    allowHeavyBad:lv>=6,
-    allowDanger:lv>=7,
-    speedMul:lv===1?.82:lv===2?.88:lv===3?.94:lv===4?.98:1+Math.min(.08,Math.max(0,lv-5)*.01),
-    rampScale:lv<=1?0:lv===2?.18:lv===3?.35:lv===4?.65:1,
-    gateSpacingMul:lv<=2?1.35:lv===3?1.18:lv===4?1.08:1,
-    obstacleSpacingMul:lv<=4?1.35:lv<=6?1.16:1,
-    forcedSpacingMul:lv<=6?1.25:1,
-    targetHumans:lv<=1?60:lv===2?85:Math.min(200,90+lv*10),
-    requiredGood:lv<=1?.35:lv===2?.48:lv===3?.55:lv<=7?.64:lv<=12?.70:.76,
-    defaultGoodRatio:lv<=2?1:.62,
+    playerLevel:playerLv,
+    difficultyOffset:DIFFICULTY_LEVEL_OFFSET,
+    allowGates:playerLv>=1,
+    allowBadGates:playerLv>=1,
+    allowObstacles:playerLv>=2,
+    allowBossMini:playerLv>=3,
+    allowForcedItems:playerLv>=4,
+    allowMult:playerLv>=2,
+    allowMaxGate:playerLv>=5,
+    allowHeavyBad:playerLv>=4,
+    allowDanger:playerLv>=5,
+    speedMul:runSpeedCurve(playerLv),
+    rampScale:runRampCurve(playerLv),
+    gateSpacingMul:gateSpacingCurve(playerLv),
+    obstacleSpacingMul:obstacleSpacingCurve(playerLv),
+    forcedSpacingMul:forcedSpacingCurve(playerLv),
+    firstGateZ:firstGateZCurve(playerLv),
+    firstOrbZ:firstOrbZCurve(playerLv),
+    firstObstacleZ:firstObstacleZCurve(playerLv),
+    firstForcedZ:firstForcedZCurve(playerLv),
+    previewSecondGateZ:firstGateZCurve(playerLv)+52,
+    previewNextGateZ:firstGateZCurve(playerLv)+96,
+    previewNextObstacleZ:firstObstacleZCurve(playerLv)>=999999?999999:firstObstacleZCurve(playerLv)+74,
+    previewNextForcedZ:firstForcedZCurve(playerLv)>=999999?999999:firstForcedZCurve(playerLv)+70,
+    targetHumans:targetHumansCurve(playerLv),
+    requiredGood:requiredGoodCurve(playerLv),
+    defaultGoodRatio:Math.max(.55,requiredGoodCurve(playerLv)-.03),
+    bossMinAI:bossMinAICurve(playerLv),
+    bossWinMult:bossWinMultCurve(playerLv),
+    bossLoseMult:bossLoseMultCurve(playerLv),
     bossMiniMisses:lv<=5?5:lv<=8?4:3,
     bossMiniPerfectMs:lv<=5?420:lv<=8?370:340,
     bossMiniLateMs:lv<=5?920:lv<=8?820:760,
-    lesson:lv<=1?'COLLECT HUMANS':lv===2?'GREEN GATES':lv===3?'GOOD VS BAD':lv===4?'DODGE WALLS':lv===5?'REFLEX BOSS':'FULL RUN'
+    lesson:playerLv<=1?'GOOD VS BAD':playerLv===2?'DODGE + COPY':playerLv===3?'REFLEX BOSS':playerLv===4?'POWER ITEMS':playerLv===5?'DANGER GATES':'FULL RUN'
   };
 }
 function gateAllowedForProgression(g,profile){
@@ -743,10 +863,10 @@ function gateAllowedForProgression(g,profile){
 }
 function initRunSpawnSchedule(){
   const profile=runDifficultyProfile();
-  nextGateZ=profile.allowGates?(profile.level<=2?84:36):999999;
-  nextOrbZ=profile.level<=1?18:45;
-  nextObstZ=profile.allowObstacles?(profile.level<=4?145:84):999999;
-  nextForcedZ=profile.allowForcedItems?(profile.level<=6?180:110):999999;
+  nextGateZ=profile.allowGates?(profile.firstGateZ||36):999999;
+  nextOrbZ=profile.firstOrbZ||45;
+  nextObstZ=profile.allowObstacles?(profile.firstObstacleZ||84):999999;
+  nextForcedZ=profile.allowForcedItems?(profile.firstForcedZ||110):999999;
 }
 function sanitizeData(data){
   const base=freshData();
@@ -2367,7 +2487,8 @@ document.addEventListener('pointerdown',e=>{
 },{capture:true});
 
 function targetHumansForLevel(){
-  return Math.min(200,90+(currentRunLevel||1)*10);
+  const profile=runDifficultyProfile(currentRunLevel);
+  return profile.targetHumans||targetHumansCurve(currentRunLevel||1);
 }
 function buildFailTip(){
   const total=(goodChoices||0)+(badChoices||0);
@@ -4523,7 +4644,9 @@ function secretCrowdWavePose(m,t){
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    GATES â€” fill most of road width
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function makeGateTex(lbl,col,tc,isGood){
+function makeGateTex(type,col,tc){
+  const lbl=(type&&type.lbl)||'';
+  const isGood=!!(type&&type.good);
   const cv=document.createElement('canvas'); cv.width=360;cv.height=260;
   const ctx=cv.getContext('2d');
   ctx.clearRect(0,0,360,260);
@@ -4555,14 +4678,20 @@ function makeGateTex(lbl,col,tc,isGood){
     ctx.fillStyle='rgba(0,0,0,.14)';for(let y=22;y<238;y+=28){ctx.fillRect(16,y,328,11);}
   }
 
-  // symbol/name: number only, huge and readable
-  const fs=lbl.length>=6?66:lbl.length>=4?90:lbl.length===3?112:130;
-  ctx.font=`900 ${fs}px "Arial Black",Impact,Arial`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineWidth=13;ctx.strokeStyle='rgba(0,0,0,.72)';ctx.shadowColor=tc||'#fff';ctx.shadowBlur=34;
-  ctx.strokeText(lbl,180,142);ctx.fillStyle='#fff';ctx.fillText(lbl,180,142);ctx.shadowBlur=0;
+  if(type&&type.t==='mult'&&type.v===2){
+    drawGateCopyIcon(ctx,180,110,.72,tc);
+  }else if(type&&type.t==='double_bad'){
+    drawGateHalfIcon(ctx,180,89,.72,tc);
+  }else{
+    // symbol/name: number only, huge and readable
+    const fs=lbl.length>=6?66:lbl.length>=4?90:lbl.length===3?112:130;
+    ctx.font=`900 ${fs}px "Arial Black",Impact,Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth=13;ctx.strokeStyle='rgba(0,0,0,.72)';ctx.shadowColor=tc||'#fff';ctx.shadowBlur=34;
+    ctx.strokeText(lbl,180,142);ctx.fillStyle='#fff';ctx.fillText(lbl,180,142);ctx.shadowBlur=0;
+  }
   // icon chip
-  ctx.font='900 38px Arial Black,Arial';ctx.fillStyle=tc||'#fff';ctx.shadowColor=tc||'#fff';ctx.shadowBlur=18;ctx.fillText(isGood?'+':lbl==='DANGER'?'!':'-',180,45);ctx.shadowBlur=0;
+  ctx.font='900 38px Arial Black,Arial';ctx.fillStyle=tc||'#fff';ctx.shadowColor=tc||'#fff';ctx.shadowBlur=18;ctx.fillText(isGood?'+':type&&type.t==='double_bad'?'!':'-',180,45);ctx.shadowBlur=0;
   const tex=new THREE.CanvasTexture(cv);tex.anisotropy=4;return tex;
 }
 
@@ -4641,7 +4770,7 @@ function spawnGate(z){
     const textColor=themeGateText(type);
     // FrontSide only â€” prevents back-face from showing through and causing blur
     const frontMat=new THREE.MeshLambertMaterial({
-      map:makeGateTex(type.lbl,capColor,textColor,type.good),
+      map:makeGateTex(type,capColor,textColor),
       transparent:true,opacity:0.84,side:THREE.FrontSide,depthWrite:true,
       emissive:capColor,emissiveIntensity:type.good?.14:.08
     });
@@ -5598,7 +5727,8 @@ function beginBoss(cz){
   const goodRatio=total>0?goodChoices/total:(profile.defaultGoodRatio||0.5);
   const badRatio =total>0?badChoices/total:(1-goodRatio);
   const diffMult=Math.exp((badRatio-goodRatio)*0.72);
-  const levelPressure=clamp((currentRunLevel-1)/18,0,.55);
+  const bossLevel=profile.level||currentRunLevel;
+  const levelPressure=clamp((bossLevel-1)/18,0,.55);
   const requiredGood=profile.requiredGood;
   const targetHumans=profile.targetHumans;
   const goodEnough = crowd>=1000 ? goodRatio>=0.50 : goodRatio>=requiredGood;
@@ -5610,10 +5740,10 @@ function beginBoss(cz){
   bossVisualHumanStart=0;bossVisualAIStart=0;
   bossFightFXT=0;bossFightLastProgress=-1;bossSparkLast=0;
 
-  const winMult=clamp(.34+levelPressure*.18,.24,.56);
-  const loseMult=clamp(1.10+levelPressure*.65,.95,1.95);
+  const winMult=clamp((profile.bossWinMult||.36)+levelPressure*.04,.24,.56);
+  const loseMult=clamp((profile.bossLoseMult||1.18)+levelPressure*.08,.95,1.95);
   const finalMult = playerWins ? Math.min(diffMult, winMult) : Math.max(diffMult, loseMult);
-  const minAI=profile.level<=1?10:profile.level===2?14:18+currentRunLevel*3;
+  const minAI=profile.bossMinAI||bossMinAICurve(profile.playerLevel||currentRunLevel||1);
   const aiCount=Math.max(minAI, Math.round(crowd*finalMult));
   const pct=Math.round(goodRatio*100);
   document.getElementById('boss-title').textContent=`${pct}% GOOD`;
@@ -6786,16 +6916,16 @@ const MenuGameplayPreview={
     spawnOrbs(24);
     spawnOrbs(36);
     const profile=runDifficultyProfile(level);
-    if(profile.allowGates)spawnGate(profile.level<=2?84:36);
-    if(profile.allowObstacles)spawnObstacle(profile.level<=4?145:58);
+    if(profile.allowGates)spawnGate(profile.firstGateZ||36);
+    if(profile.allowObstacles)spawnObstacle(profile.firstObstacleZ||84);
     spawnOrbs(70);
-    if(profile.allowGates&&profile.level>2)spawnGate(88);
-    if(profile.allowForcedItems)spawnForcedItem(profile.level<=6?180:118);
+    if(profile.allowGates)spawnGate(profile.previewSecondGateZ||88);
+    if(profile.allowForcedItems)spawnForcedItem(profile.firstForcedZ||118);
     initRunSpawnSchedule();
     nextOrbZ=Math.max(nextOrbZ,92);
-    if(profile.allowGates)nextGateZ=Math.max(nextGateZ,128);
-    if(profile.allowObstacles)nextObstZ=Math.max(nextObstZ,profile.level<=4?220:108);
-    if(profile.allowForcedItems)nextForcedZ=Math.max(nextForcedZ,profile.level<=6?250:170);
+    if(profile.allowGates)nextGateZ=Math.max(nextGateZ,profile.previewNextGateZ||128);
+    if(profile.allowObstacles)nextObstZ=Math.max(nextObstZ,profile.previewNextObstacleZ||108);
+    if(profile.allowForcedItems)nextForcedZ=Math.max(nextForcedZ,profile.previewNextForcedZ||170);
     dist=0;cxVar=0;tgtX=0;speedUpShown=false;currentRunSpeed=C.speed;currentRunSpeedMult=1;resetFeverState();resetNearMissState();resetMilestoneSpectacle();
     camera.position.set(0,9,-12);
     camera.lookAt(0,1.5,16);
