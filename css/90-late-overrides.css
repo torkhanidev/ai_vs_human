@@ -1577,7 +1577,16 @@
   #s-menu.ui-clean-v52 .stage-node{width:16px !important;height:16px !important}
 }
 @media(max-width:760px){
-  #s-menu.ui-clean-v52 .menu-stage-track{display:none !important}
+  #s-menu.ui-clean-v52 .menu-stage-track{
+    display:block !important;
+    position:relative !important;
+    top:auto !important;
+    left:auto !important;
+    transform:none !important;
+    width:min(380px,92vw) !important;
+    margin:20% auto 4px !important;
+    z-index:auto !important;
+  }
   #s-menu .content-panel.v14{
     width:min(430px,96vw);
     min-width:0;
