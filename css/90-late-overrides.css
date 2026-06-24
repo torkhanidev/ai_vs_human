@@ -2163,6 +2163,10 @@ body.boss-mini-focus #boss-tap-zone{
     min-height:auto !important;
     justify-content:flex-start !important;
     gap:8px !important;
+    margin-top:30px !important;
+  }
+  #s-menu.ui-clean-v52 .hero-stage{
+    display:none !important;
   }
   body.menu-mode #s-menu.ui-clean-v52 .next-run-goal-card{
     min-height:66px !important;
