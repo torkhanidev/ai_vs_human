@@ -4,7 +4,7 @@ canvas{position:fixed;top:0;left:0;display:block;will-change:transform}
 
 #hud{position:fixed;top:0;left:0;width:100%;z-index:10;pointer-events:none;padding:12px 16px 0}
 #prog-bg{width:100%;height:8px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden;box-shadow:0 0 10px rgba(0,200,255,.2)}
-#prog-fill{height:100%;background:linear-gradient(90deg,#00BFFF,#00FFD0);border-radius:4px;width:100%;transform:scaleX(0);transform-origin:left center;transition:transform .16s linear;box-shadow:0 0 8px #00FFD0;will-change:transform}
+#prog-fill{height:100%;background:linear-gradient(90deg,#00BFFF,#00FFD0);border-radius:4px;width:0%;transition:width .16s linear;box-shadow:0 0 8px #00FFD0}
 #hud-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 #crowd-lbl{font-size:28px;font-weight:900;color:#fff;text-shadow:0 0 18px rgba(0,200,255,.8),0 2px 6px rgba(0,0,0,.8);letter-spacing:-0.5px;transition:transform .12s;font-family:'Black Han Sans',Impact}
 #dist-lbl{font-size:11px;color:rgba(255,255,255,.5);font-weight:700;letter-spacing:.1em}

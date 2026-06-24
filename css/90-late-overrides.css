@@ -2059,14 +2059,17 @@ body.menu-mode #s-menu.ui-clean-v52 .play-big.v14{
 body.menu-mode #s-menu.ui-clean-v52 .mini-shop-btn{
   display:none !important;
 }
+@media(min-width:761px){
+  #s-menu .play-big.v14{
+    display:none !important;
+  }
+}
 body.menu-mode #s-menu.ui-clean-v52 .side-actions.v14.menu-action{
   grid-area:actions !important;
-  position:static !important;
   transform:none !important;
-  width:min(320px,100%) !important;
   display:flex !important;
   gap:8px !important;
-  justify-self:center !important;
+  justify-content:end !important;
   opacity:.64 !important;
 }
 body.menu-mode #s-menu.ui-clean-v52 .side-actions.v14.menu-action .side-btn.v14{

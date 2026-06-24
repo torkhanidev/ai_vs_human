@@ -2659,6 +2659,8 @@ function applyEquippedSkin(){
   matShoe.color.set(s.shoe);matShoe.emissive.set(s.glow);matShoe.emissiveIntensity=.10;matShoe.needsUpdate=true;
   matBelt.color.set(rarityColor(s.rarity));matBelt.needsUpdate=true;
   if(typeof LeaderFX!=='undefined'&&LeaderFX&&LeaderFX.applySkin)LeaderFX.applySkin(s);
+  const bg=document.getElementById('prog-bg');
+  if(bg)bg.style.background=s.body+'33';
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
