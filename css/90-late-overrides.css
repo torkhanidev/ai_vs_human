@@ -2853,11 +2853,6 @@ body.menu-mode #s-menu.ui-clean-v52 .preview-human{
   background:rgba(255,255,255,.10);
   box-shadow:none;
 }
-.space-map-caption{
-  position:sticky !important;
-  bottom:0 !important;
-  z-index:3 !important;
-}
 @media(max-width:430px){
   .space-map-title{
     font-size:28px !important;
