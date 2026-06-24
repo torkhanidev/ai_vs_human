@@ -710,7 +710,7 @@ const WORLD_DEFS=[
   },
   {
     id:'void',name:'Galaxy Void',level:150,unlockLevel:150,color:'#FF4081',
-    sky:'#020006',fog:'#12001F',road:'#130B2E',edge:'#FFD740',dash:'#FF4081',good:'#FFD740',bad:'#D500F9',star:'#FFF3C4',planet:'#FFD740',accent:'#FF4081',
+    sky:'#060006',fog:'#1a001f',road:'#2f0634',edge:'#211e3e',dash:'#FF4081',good:'#b606b0',bad:'#D500F9',star:'#ffffff',planet:'#3b0043',accent:'#FF4081',
     fogDensity:.012,
     texture:'void_stars',floorTexture:'void_stars',skyType:'black_hole',particleType:'star_shards',backdrop:'galaxy_void',roadStyle:'void_road',
     obstacleStyle:'void_shards',gateStyle:'void_gate',enemyStyle:'void_enemy',visualMood:'final_galaxy_elite',

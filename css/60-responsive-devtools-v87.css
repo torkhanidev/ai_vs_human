@@ -26,7 +26,7 @@
 
 
 /* V21 DOPAMINE ICON PACK â€” lively in-game icons, no emoji */
-.ui-icon,.reward-icon{display:inline-block;position:relative;flex:0 0 auto;box-sizing:border-box;vertical-align:middle}
+.ui-icon,.reward-icon{display:inline-block;position:relative;flex:0 0 auto;box-sizing:border-box}
 .ui-icon{width:26px;height:26px;margin-right:7px;transform:translateY(-1px)}
 .meta-pill .ui-icon{width:22px;height:22px;margin-right:7px;top:-1px}
 .btn .ui-icon,.side-btn .ui-icon,.shop-tab .ui-icon,.mini-shop-btn .ui-icon{margin-right:8px}
@@ -3982,7 +3982,7 @@ body.world-mars #s-menu::after{opacity:.025 !important;}
 }
 #s-menu.ui-clean-v52 .goal-kid-icon{width:36px;height:36px;min-width:36px}
 #s-menu.ui-clean-v52 .goal-kid-label{font-size:9px;letter-spacing:.16em;color:#FFD740}
-#s-menu.ui-clean-v52 .goal-kid-title{font-size:14px;line-height:1.05}
+#s-menu.ui-clean-v52 .goal-kid-title{font-size:20px;line-height:1.05}
 #s-menu.ui-clean-v52 .goal-kid-progress{font-size:10px;margin-top:5px}
 #s-menu.ui-clean-v52 .play-row{margin:0;gap:8px}
 #s-menu.ui-clean-v52 .play-big.v14{
@@ -4106,7 +4106,7 @@ body.world-mars #s-menu::after{opacity:.025 !important;}
   #s-menu.ui-clean-v52 .next-run-goal-card{min-height:64px;padding:8px 9px;border-radius:18px}
   #s-menu.ui-clean-v52 .goal-kid-icon{width:28px;height:28px;min-width:28px}
   #s-menu.ui-clean-v52 .goal-kid-label{font-size:8px}
-  #s-menu.ui-clean-v52 .goal-kid-title{font-size:12px}
+  #s-menu.ui-clean-v52 .goal-kid-title{font-size:20px}
   #s-menu.ui-clean-v52 .goal-kid-progress{font-size:9px;margin-top:3px}
   #s-menu.ui-clean-v52 .play-big.v14{min-height:49px;font-size:18px;border-radius:22px}
   #s-menu.ui-clean-v52 .mini-shop-btn{width:52px;min-height:49px;border-radius:18px;font-size:9px}
