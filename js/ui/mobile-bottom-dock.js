@@ -370,6 +370,7 @@
         renderSpaceMap();
         setMapCaption(w.name+' selected as your gameplay theme.');
         try{if(typeof Sensory!=='undefined'&&Sensory.play)Sensory.play('start');}catch(err){}
+        window.closeSpaceMap(e);
       }else if(result&&result.reason==='locked'){
         setMapCaption(w.name+' unlocks at level '+unlock+'.');
       }
@@ -379,6 +380,7 @@
       if(spaceMapNewId===w.id)spaceMapNewId=null;
       renderSpaceMap();
       setMapCaption(w.name+' selected as your gameplay theme.');
+      window.closeSpaceMap(e);
     }
     try{if(typeof Haptic!=='undefined'&&Haptic.pulse)Haptic.pulse('tap');}catch(err){}
   };

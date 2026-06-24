@@ -6156,12 +6156,12 @@ function floatTxt(txt,x,y,col,sz,anim){
   const vh=Math.max(1,window.innerHeight||innerHeight||600);
   const baseSize=Math.max(12,Number(sz)||36);
   const fitSize=Math.max(18,Math.min(baseSize,Math.floor((vw-28)/(Math.max(4,label.length)*.56))));
-  const finalSize=IS_MOBILE?Math.max(14,Math.floor(fitSize*.78)):Math.max(20,Math.min(baseSize,fitSize+4));
+  const finalSize=IS_MOBILE?Math.max(14,Math.floor(fitSize*.3)):Math.max(20,Math.min(baseSize,fitSize+4));
   const safeX=clamp(Number(x)||vw*.5,14,vw-14);
   const safeY=clamp(Number(y)||vh*.5,48,vh-58);
   const color=col||'#fff';
   el.textContent=label;
-  el.style.cssText=`left:${safeX}px;top:${safeY}px;translate:-50% 0;color:${color};font-size:${finalSize}px;text-shadow:${IS_MOBILE?`1px 2px 6px rgba(0,0,0,.85),0 0 10px ${color}`:`0 0 12px ${color}`};max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis;text-align:center`;
+  el.style.cssText=`left:${safeX}px;top:${safeY}px;translate:-50% 0;color:${color};font-size:${finalSize}px;text-shadow:${IS_MOBILE?'none':`0 0 12px ${color}`};max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis;text-align:center`;
   // Use cached ref (or fallback query if called before init)
   (_hudFloatsEl||document.getElementById('floats')).appendChild(el);
   setTimeout(()=>el.remove(),1500);
