@@ -6563,7 +6563,7 @@ function updateRunnerTrailFX(dt,t,cz){
   runnerTrailSide*=-1;
   const x=cxVar+runnerTrailSide*spread*(.45+Math.random()*.38)+(Math.random()-.5)*.24;
   const z=cz-1.1-Math.random()*1.7;
-  const n=(IS_MOBILE?2:4)+Math.floor((speedP+feverP+steer)*(IS_MOBILE?2:4));
+  const n=Math.floor(((IS_MOBILE?2:4)+Math.floor((speedP+feverP+steer)*(IS_MOBILE?2:4)))*(IS_MOBILE?.3:1));
   burst(x,.08,z,col,n);
   if(steer>.68&&!IS_MOBILE){
     burst(cxVar-runnerTrailSide*.55,.14,cz-2.2,hexNum(w.edge||w.good||'#00E5FF'),3);
