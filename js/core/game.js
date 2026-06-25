@@ -359,6 +359,7 @@ let maxComboThisRun=0,lastComboBonusCoins=0,lastBaseRunReward=0;
 let lastGoalReward=0,lastGoalCompleted=false,lastGoalTitle='',lastGoalProgressText='';
 let lastFailReason='',lastFailFix='';
 let lastWorldUnlocked=false,lastWorldName='',lastWorldUnlockBonus=0,lastWorldUnlockId='',currentThemeId='';
+let activeRunModifier=null,activeMicroGoals=[],runStats=null,freshnessBonusCoinsThisRun=0,riskDebtThisRun=0,runPacingBeat=0,comebackUsed=false,lastFreshnessResultText='';
 let shakeAmt=0,shakeDur=0;
 let gates_=[],laneTiles=[],particles_=[],orbs_=[];
 let obstacles_=[];
@@ -748,6 +749,32 @@ const V18_BALANCE={
   crowdFail:2.9,
   winBonus:90
 };
+const RUN_MODIFIERS=[
+  {id:'rush',name:'Rush Road',short:'RUSH',desc:'Faster road, bigger payout',speedMul:1.08,gateSpacingMul:.94,rewardMult:1.08,accent:'#00E5FF'},
+  {id:'rescue',name:'Rescue Signal',short:'RESCUE',desc:'One stronger comeback moment',speedMul:.98,gateSpacingMul:1.04,comebackBoost:8,rewardMult:1.03,accent:'#69F0AE'},
+  {id:'bounty',name:'Bounty Gates',short:'BOUNTY',desc:'Risk gates can pay coins',speedMul:1.01,gateSpacingMul:1,riskChance:.34,rewardMult:1.06,accent:'#FFD740'},
+  {id:'focus',name:'Boss Focus',short:'FOCUS',desc:'Longer reflex window, smaller reward',speedMul:1,gateSpacingMul:1.02,bossMiniMs:90,bossMisses:1,rewardMult:.98,accent:'#EA80FC'},
+  {id:'flow',name:'Flow Run',short:'FLOW',desc:'More breathing room for combos',speedMul:.96,gateSpacingMul:1.08,rewardMult:1.02,accent:'#80D8FF'}
+];
+const WORLD_TRAITS={
+  mars:{name:'Dust Rally',desc:'Rescue events start a little stronger.',comebackBoost:4,accent:'#FF8A3D'},
+  ice:{name:'Frozen Slide',desc:'Slower road, wider reflex timing.',speedMul:.97,gateSpacingMul:1.05,bossMiniMs:70,accent:'#B3F5FF'},
+  saturn:{name:'Ring Bonus',desc:'Orb pickups occasionally add an extra human.',orbEvery:5,rewardMult:1.04,accent:'#FFD06A'},
+  toxic:{name:'Toxic Second Wind',desc:'Low-crowd recovery gives more humans.',comebackBoost:7,badReduction:.06,accent:'#AEEA00'},
+  cyber:{name:'Scanner Grid',desc:'Boss prompts stay readable for longer.',bossMiniMs:95,riskChance:.04,accent:'#00E5FF'},
+  void:{name:'Void Stakes',desc:'Higher reward with a little more boss pressure.',rewardMult:1.09,bossDebt:6,accent:'#FFD740'}
+};
+const SKIN_TRAITS={
+  default:{name:'Balanced',desc:'No passive. Clean classic run.'},
+  ice:{name:'Chill Guard',desc:'Red gates hurt 10% less.',badReduction:.10},
+  fire:{name:'Spark Start',desc:'Good gates add a little extra crowd.',goodBonus:.06},
+  robot:{name:'Scanner',desc:'Boss reflex timing is easier.',bossMiniMs:110},
+  ninja:{name:'Clean Dodge',desc:'Obstacle dodges give bonus coins.',dodgeCoins:7},
+  gold:{name:'Premium Loot',desc:'Run rewards are slightly higher.',rewardMult:1.05},
+  toxic:{name:'Regen Boost',desc:'Comeback rescue gives extra humans.',comebackBoost:6},
+  galaxy:{name:'Star Pull',desc:'Orbs are worth more during runs.',orbBonus:1},
+  shadow:{name:'Boss Breaker',desc:'Perfect boss hits deal +1 damage.',bossDamage:1}
+};
 let playerData=null;
 let selectedSkinId='default';
 let lastRunReward=0,lastRunWin=false,runRewardGranted=false,currentRunLevel=1;
@@ -1124,6 +1151,275 @@ const WorldManager={defs:WORLD_DEFS,current:currentWorldDef,next:nextWorldDef};
 const UIManager={refresh:refreshMetaUI,shop:renderShop,content:renderContentUI,popup:showChestPopup};
 function skinById(id){return SKINS.find(s=>s.id===id)||SKINS[0];}
 function ownsSkin(id){return playerData&&playerData.skins.owned.includes(id);}
+function activeSkinTrait(id){
+  const key=id || (playerData&&playerData.skins&&playerData.skins.equipped) || 'default';
+  return SKIN_TRAITS[key]||SKIN_TRAITS.default;
+}
+function activeWorldTrait(w){
+  const world=w || (typeof selectedWorldDef==='function'?selectedWorldDef():null) || (typeof currentWorldDef==='function'?currentWorldDef():null);
+  return WORLD_TRAITS[(world&&world.id)||'mars']||WORLD_TRAITS.mars;
+}
+function runModifierSeed(){
+  const runs=playerData&&playerData.stats?Math.max(0,Math.round(playerData.stats.runs||0)):0;
+  const level=playerData?Math.max(1,Math.round(playerData.level||1)):1;
+  const world=(typeof selectedWorldDef==='function'?selectedWorldDef():null)||WORLD_DEFS[0];
+  const wIdx=Math.max(0,WORLD_DEFS.findIndex(w=>w.id===(world&&world.id)));
+  return runs+level*3+wIdx*5;
+}
+function predictedRunModifier(){
+  return RUN_MODIFIERS[runModifierSeed()%RUN_MODIFIERS.length]||RUN_MODIFIERS[0];
+}
+function microGoalTemplates(mod){
+  const level=playerData?Math.max(1,playerData.level||1):1;
+  const riskReady=(mod&&mod.id==='bounty')||level>=4;
+  return [
+    {id:'good',title:'Good Gates',target:level>=10?5:4,reward:45+Math.min(80,level*4),stat:'good'},
+    {id:'orbs',title:'Collect Orbs',target:level>=8?16:12,reward:35+Math.min(70,level*3),stat:'orbs'},
+    {id:'combo',title:'Combo x'+(level>=10?6:5),target:level>=10?6:5,reward:55+Math.min(85,level*4),stat:'combo'},
+    {id:'crowd',title:'Reach Crowd',target:Math.min(220,70+level*8),reward:60+Math.min(100,level*4),stat:'crowd'},
+    {id:'dodge',title:'Clean Dodges',target:2,reward:45+Math.min(75,level*4),stat:'dodges',minLevel:2},
+    {id:'risk',title:'Take Bounty',target:1,reward:70+Math.min(120,level*5),stat:'risk',enabled:riskReady},
+    {id:'win',title:'Beat Boss',target:1,reward:90+Math.min(140,level*6),stat:'win'}
+  ].filter(g=>(!g.minLevel||level>=g.minLevel)&&g.enabled!==false);
+}
+function buildMicroGoalSet(mod){
+  const pool=microGoalTemplates(mod);
+  if(!pool.length)return [];
+  const seed=runModifierSeed()+((mod&&RUN_MODIFIERS.findIndex(x=>x.id===mod.id))||0);
+  const out=[];
+  if(mod&&mod.id==='bounty'){
+    const risk=pool.find(g=>g.id==='risk');
+    if(risk)out.push(Object.assign({progress:0,complete:false},risk));
+  }
+  for(let i=0;out.length<3&&i<pool.length*2;i++){
+    const g=pool[(seed+i*2)%pool.length];
+    if(!out.some(x=>x.id===g.id))out.push(Object.assign({progress:0,complete:false},g));
+  }
+  return out.slice(0,3);
+}
+function microGoalProgress(goal,win){
+  if(!goal)return 0;
+  const stats=runStats||{};
+  if(goal.stat==='good')return Math.max(0,Math.round(stats.good||0));
+  if(goal.stat==='orbs')return Math.max(0,Math.round(stats.orbs||0));
+  if(goal.stat==='combo')return Math.max(0,Math.round(maxComboThisRun||combo||0));
+  if(goal.stat==='crowd')return Math.max(0,Math.round(peak||crowd||0));
+  if(goal.stat==='dodges')return Math.max(0,Math.round(stats.dodges||0));
+  if(goal.stat==='risk')return Math.max(0,Math.round(stats.risk||0));
+  if(goal.stat==='win')return win?1:0;
+  return 0;
+}
+function microGoalLine(goal,win){
+  const p=Math.min(goal.target,microGoalProgress(goal,win));
+  return goal.title+' '+p+'/'+goal.target;
+}
+function renderFreshnessMenu(){
+  const mod=(gState==='RUNNING'||gState==='BOSS')&&activeRunModifier?activeRunModifier:predictedRunModifier();
+  const trait=activeWorldTrait();
+  const skin=activeSkinTrait();
+  const sub=document.getElementById('menu-run-modifier');
+  if(sub)sub.textContent=(mod?mod.name:'Fresh Run')+' - '+(trait&&trait.name?trait.name:'World Trait');
+  const chip=document.querySelector('#s-menu .season-chip');
+  if(chip)chip.textContent=(mod&&mod.short?mod.short:'FRESH')+' RUN';
+  const list=document.getElementById('session-goals-list');
+  if(list){
+    const liveGoals=(gState==='RUNNING'||gState==='BOSS')&&activeMicroGoals&&activeMicroGoals.length;
+    const goals=liveGoals?activeMicroGoals:buildMicroGoalSet(mod);
+    list.innerHTML='';
+    const rows=[
+      {k:'MOD',t:mod?mod.desc:'New twist every run',c:mod&&mod.accent},
+      {k:'WORLD',t:trait?trait.desc:'World trait active',c:trait&&trait.accent},
+      {k:'SKIN',t:skin?skin.desc:'Skin passive active',c:skin&&skin.accent}
+    ];
+    goals.slice(0,2).forEach(g=>rows.push({k:'GOAL',t:g.title+' +'+g.reward,c:'#69F0AE'}));
+    rows.slice(0,5).forEach(r=>{
+      const el=document.createElement('div');
+      el.className='session-goal-row';
+      if(r.c)el.style.setProperty('--freshAccent',r.c);
+      el.innerHTML='<b>'+r.k+'</b><span>'+r.t+'</span>';
+      list.appendChild(el);
+    });
+  }
+}
+function renderFreshnessHUD(win){
+ 
+  if(!hud)return;
+  const active=gState==='RUNNING'||gState==='BOSS';
+  hud.classList.toggle('show',active);
+  if(!active)return;
+  const mod=activeRunModifier||predictedRunModifier();
+  const label=document.getElementById('fresh-mod-label');
+  if(label){
+    label.textContent=(mod&&mod.short?mod.short:'FRESH')+' - '+(activeWorldTrait().name||'WORLD');
+    label.style.setProperty('--freshAccent',(mod&&mod.accent)||activeWorldTrait().accent||'#00E5FF');
+  }
+  const list=document.getElementById('fresh-goals-live');
+  if(list){
+    list.innerHTML='';
+    activeMicroGoals.slice(0,3).forEach(g=>{
+      const p=Math.min(g.target,microGoalProgress(g,win));
+      const item=document.createElement('div');
+      item.className='fresh-goal'+(g.complete?' done':'');
+      item.innerHTML='<span>'+g.title+'</span><b>'+p+'/'+g.target+'</b>';
+      list.appendChild(item);
+    });
+  }
+}
+function resetFreshnessRunState(){
+  activeRunModifier=null;
+  activeMicroGoals=[];
+  runStats={good:0,bad:0,orbs:0,dodges:0,risk:0,comeback:0};
+  freshnessBonusCoinsThisRun=0;
+  riskDebtThisRun=0;
+  runPacingBeat=0;
+  comebackUsed=false;
+  lastFreshnessResultText='';
+  document.body.classList.remove('run-mod-rush','run-mod-rescue','run-mod-bounty','run-mod-focus','run-mod-flow');
+}
+function startFreshnessRun(){
+  resetFreshnessRunState();
+  activeRunModifier=predictedRunModifier();
+  activeMicroGoals=buildMicroGoalSet(activeRunModifier);
+  if(activeRunModifier)document.body.classList.add('run-mod-'+activeRunModifier.id);
+  renderFreshnessHUD();
+  renderFreshnessMenu();
+  setTimeout(()=>{
+    if(gState==='RUNNING'&&activeRunModifier){
+      phaseFlash(activeRunModifier.name.toUpperCase());
+      floatTxt(activeRunModifier.short+' RUN',innerWidth*.5,innerHeight*.36,activeRunModifier.accent||'#00E5FF',38,'streak');
+    }
+  },520);
+}
+function freshnessRewardMultiplier(){
+  const mod=activeRunModifier||null;
+  const skin=activeSkinTrait();
+  const trait=activeWorldTrait();
+  let mult=1;
+  if(mod&&mod.rewardMult)mult*=mod.rewardMult;
+  if(skin&&skin.rewardMult)mult*=skin.rewardMult;
+  if(trait&&trait.rewardMult)mult*=trait.rewardMult;
+  return Math.max(.85,Math.min(1.25,mult));
+}
+function freshnessSpeedMultiplier(){
+  const mod=activeRunModifier||null,trait=activeWorldTrait();
+  return (mod&&mod.speedMul?mod.speedMul:1)*(trait&&trait.speedMul?trait.speedMul:1);
+}
+function freshnessGateSpacingMultiplier(){
+  const mod=activeRunModifier||null,trait=activeWorldTrait();
+  return (mod&&mod.gateSpacingMul?mod.gateSpacingMul:1)*(trait&&trait.gateSpacingMul?trait.gateSpacingMul:1);
+}
+function freshnessBossMsBonus(){
+  const mod=activeRunModifier||null,trait=activeWorldTrait(),skin=activeSkinTrait();
+  return (mod&&mod.bossMiniMs||0)+(trait&&trait.bossMiniMs||0)+(skin&&skin.bossMiniMs||0);
+}
+function freshnessBossMissBonus(){
+  const mod=activeRunModifier||null;
+  return mod&&mod.bossMisses?mod.bossMisses:0;
+}
+function badGateLossMultiplier(){
+  const skin=activeSkinTrait(),trait=activeWorldTrait();
+  return Math.max(.70,1-(skin&&skin.badReduction||0)-(trait&&trait.badReduction||0));
+}
+function goodGateGainMultiplier(){
+  const skin=activeSkinTrait();
+  return 1+(skin&&skin.goodBonus||0);
+}
+function orbPickupBonus(){
+  const skin=activeSkinTrait(),trait=activeWorldTrait();
+  let bonus=skin&&skin.orbBonus?skin.orbBonus:0;
+  if(trait&&trait.orbEvery&&runStats&&(runStats.orbs||0)>0&&(runStats.orbs||0)%trait.orbEvery===0)bonus+=1;
+  return bonus;
+}
+function riskGateChance(){
+  const mod=activeRunModifier||null,trait=activeWorldTrait();
+  return Math.max(0,(mod&&mod.riskChance||0)+(trait&&trait.riskChance||0));
+}
+function makeRiskGate(){
+  const level=playerData?Math.max(1,playerData.level||1):1;
+  return{t:'risk',v:12+Math.min(24,Math.floor(level/3)*2),coin:35+Math.min(90,level*5),debt:8+Math.min(34,Math.floor(level/2)),lbl:'RISK',col:0x795500,tc:'#FFD740',good:true,w:1};
+}
+function addCrowdMembers(gain){
+  gain=Math.max(0,Math.round(gain||0));
+  if(gain<=0)return;
+  const n2=members.length;
+  const golden=2.399963229;
+  const scale=Math.sqrt(n2+gain)*.50;
+  for(let g=0;g<gain;g++){
+    const r=Math.sqrt((n2+g+.5)/(n2+gain))*scale;
+    const theta=(n2+g)*golden;
+    members.push({ox:r*Math.cos(theta),oz:r*Math.sin(theta)*.7,ph:((n2+g)*.618)*Math.PI*2});
+  }
+}
+function recordFreshEvent(kind,amount,win){
+  if(!runStats)runStats={good:0,bad:0,orbs:0,dodges:0,risk:0,comeback:0};
+  if(kind&&Object.prototype.hasOwnProperty.call(runStats,kind))runStats[kind]+=Math.max(1,Math.round(amount||1));
+  checkMicroGoals(win);
+  renderFreshnessHUD(win);
+}
+function checkMicroGoals(win){
+  if(!activeMicroGoals||!activeMicroGoals.length)return;
+  activeMicroGoals.forEach(g=>{
+    g.progress=microGoalProgress(g,win);
+    if(!g.complete&&g.progress>=g.target){
+      g.complete=true;
+      const reward=Math.max(0,Math.round(g.reward||0));
+      if(reward>0){
+         
+        floatTxt(g.title.toUpperCase()+' +'+reward,innerWidth*.5,innerHeight*.30,'#69F0AE',28,'streak');
+        rewardFlash('green');
+      }
+      if(window.Sensory)Sensory.play('combo',{combo:4});
+      if(window.Haptic)Haptic.pulse('combo');
+    }
+  });
+}
+function maybeTriggerComebackEvent(cz){
+  if(comebackUsed||gState!=='RUNNING'||dist<95||dist>C.bossDist-95||!runStats)return;
+  const target=typeof targetHumansForLevel==='function'?targetHumansForLevel():80;
+  const trigger=Math.max(3,Math.round(Math.max(peak||0,target)*.16));
+  if(crowd>trigger)return;
+  const mod=activeRunModifier||{};
+  const trait=activeWorldTrait();
+  const skin=activeSkinTrait();
+  const gain=10+(mod.comebackBoost||0)+(trait.comebackBoost||0)+(skin.comebackBoost||0);
+  comebackUsed=true;
+  runStats.comeback++;
+  crowd=Math.min(9999,crowd+gain);
+  peak=Math.max(peak,crowd);
+  addCrowdMembers(gain);
+  triggerRoadPulse(true,1.2);
+  rewardFlash('green');
+  shake(.30);
+  phaseFlash('RESCUE SIGNAL!');
+  floatTxt('RESCUE +'+gain,innerWidth*.5,innerHeight*.42,'#69F0AE',42,'spin');
+  if(window.Sensory)Sensory.play('comeback');
+  if(window.Haptic)Haptic.pulse('comeback');
+  recordFreshEvent('comeback',1);
+  updateHUD();
+}
+function updateRunPacing(p){
+  if(runPacingBeat<1&&p>=.28){
+    runPacingBeat=1;
+    phaseFlash('BUILD PHASE');
+    floatTxt('BUILD TEAM',innerWidth*.5,innerHeight*.42,'#00E5FF',32,'streak');
+  }else if(runPacingBeat<2&&p>=.58){
+    runPacingBeat=2;
+    phaseFlash('DANGER PHASE');
+    triggerRoadPulse(false,.75);
+  }else if(runPacingBeat<3&&p>=.82){
+    runPacingBeat=3;
+    phaseFlash('BOSS SOON');
+    rewardFlash('blue');
+  }
+}
+function summarizeFreshnessResult(win){
+  const done=(activeMicroGoals||[]).filter(g=>g.complete).length;
+  const mod=activeRunModifier||predictedRunModifier();
+  const mult=freshnessRewardMultiplier();
+  const bonus=freshnessBonusCoinsThisRun>0?' +'+freshnessBonusCoinsThisRun+' goal coins':'';
+  lastFreshnessResultText=(done?done+'/'+(activeMicroGoals.length||3)+' fresh goals done':'Fresh goals ready')+' - '+(mod?mod.name:'next run rotates')+(mult!==1?' x'+mult.toFixed(2)+' reward':'')+bonus+'.';
+  return lastFreshnessResultText;
+}
 function startingCrowdCount(){return 1;}
 function calcRunReward(win,survivors){
   const safeSurvivors=Math.max(0,Math.round(survivors||0));
@@ -1217,12 +1513,14 @@ function autoOpenBossChestAfterResult(kind){
 function grantRunReward(win){
   if(runRewardGranted)return lastRunReward;
   runRewardGranted=true;lastRunWin=!!win;
-  lastBaseRunReward=calcRunReward(win,crowd);
+  checkMicroGoals(!!win);
+  lastBaseRunReward=Math.round(calcRunReward(win,crowd)*freshnessRewardMultiplier());
   const comboRate=comboBonusRateFor(maxComboThisRun);
   const fullComboBonus=Math.round(lastBaseRunReward*comboRate);
   lastComboBonusCoins=win?fullComboBonus:Math.round(fullComboBonus*.35);
-  lastRunReward=lastBaseRunReward+lastComboBonusCoins;
-  addCoins(lastRunReward,{silent:true});
+  const resultCoins=lastBaseRunReward+lastComboBonusCoins;
+  lastRunReward=resultCoins+freshnessBonusCoinsThisRun;
+  addCoins(resultCoins,{silent:true});
   playerData.bestCrowd=Math.max(playerData.bestCrowd,peak,crowd);
   playerData.stats.runs++;
   if(win){
@@ -1234,6 +1532,7 @@ function grantRunReward(win){
   if(goalBonus>0)lastRunReward+=goalBonus;
   const bonus=checkMissions(true);
   if(bonus>0)lastRunReward+=bonus;
+  summarizeFreshnessResult(!!win);
   saveGame();refreshMetaUI();return lastRunReward;
 }
 
@@ -1753,13 +2052,13 @@ function closeChestPopup(){
   }
   function skinInfo(){
     const next=(typeof nextLockedSkin==='function')?nextLockedSkin():null;
-    if(!next||!window.playerData)return{next:null,pct:100,need:0};
+    if(!next||!playerData)return{next:null,pct:100,need:0};
     const coins=Math.max(0,Number(playerData.coins)||0);
     const price=Math.max(1,Number(next.price)||1);
     return{next,pct:pctClamp((coins/price)*100),need:Math.max(0,price-coins)};
   }
   function worldInfo(){
-    if(typeof nextWorldDef!=='function'||typeof currentWorldDef!=='function'||!window.playerData)return{next:null,pct:100,need:0};
+    if(typeof nextWorldDef!=='function'||typeof currentWorldDef!=='function'||!playerData)return{next:null,pct:100,need:0};
     const next=nextWorldDef();
     const cur=currentWorldDef();
     if(!next)return{next:null,pct:100,need:0};
@@ -1782,6 +2081,7 @@ function closeChestPopup(){
     if(chest.ready)return{type:'chest',state:'ready',badge:'OPEN',label:'GIFT',title:'Boss Chest ready!',progressText:'3/3 WINS',rewardText:'OPEN NOW',pct:100,sub:'Open it now, then run again for the next chest.'};
     if(chest.need===1)return{type:'chest',state:'almost',badge:'1 WIN',label:'GIFT',title:'1 win to open Boss Chest',progressText:chest.progress+'/3 WINS',rewardText:'BIG REWARD',pct:chest.pct,sub:'One more victory unlocks a big reward.'};
     const skin=skinInfo();
+    if(skin.next&&skin.pct>=100)return{type:'skin',state:'ready',badge:'BUY',label:'SKIN',title:'Ready to buy '+skin.next.name,progressText:'ENOUGH COINS',rewardText:'OPEN SHOP',pct:100,sub:'Grab the skin passive, then try the next fresh run.'};
     if(skin.next&&skin.pct>=85)return{type:'skin',state:'almost',badge:'ALMOST',label:'SKIN',title:'Only '+skin.need+' coins for '+skin.next.name,progressText:Math.round(skin.pct)+'% UNLOCKED',rewardText:'NEW SKIN',pct:skin.pct,sub:'One more run can unlock your next skin.'};
     if(skin.next&&skin.pct>=65&&kind==='result')return{type:'skin',state:'almost',badge:Math.round(skin.pct)+'%',label:'SKIN',title:'Next skin: '+skin.next.name,progressText:Math.round(skin.pct)+'% UNLOCKED',rewardText:skin.need+' COINS LEFT',pct:skin.pct,sub:'Keep the coin flow going.'};
     const world=worldInfo();
@@ -1823,7 +2123,7 @@ function closeChestPopup(){
   }
   window.MetaDopamine={
     refreshMenu(){
-      if(!window.playerData)return;
+      if(!playerData)return;
       clearMenu();
       const hook=pickBestHook('menu');
       renderSmartRewardCard(hook);
@@ -1831,7 +2131,7 @@ function closeChestPopup(){
       if(play)play.classList.add('meta-play-glow');
     },
     prepareResult(kind){
-      if(!window.playerData)return;
+      if(!playerData)return;
       const hook=pickBestHook(kind);
       const box=document.getElementById(kind+'-one-more-hook');
       const title=document.getElementById(kind+'-one-more-title');
@@ -1841,7 +2141,7 @@ function closeChestPopup(){
       const k=box.querySelector('.one-more-kicker');
       if(k)k.textContent=hook.type==='fix'?'NEXT FIX':'ONE MORE RUN';
       if(title)title.textContent=hook.title;
-      if(sub)sub.textContent=hook.sub;
+      if(sub)sub.textContent=hook.sub+(window.lastFreshnessResultText?' '+window.lastFreshnessResultText:(lastFreshnessResultText?' '+lastFreshnessResultText:''));
     },
     pickBestHook,
     renderSmartRewardCard
@@ -2014,7 +2314,7 @@ function refreshMetaUI(){
     setText('next-skin-text','All skins unlocked!');setText('next-skin-percent','100%');setBar('next-skin-fill',100);
     renderDailyUI();
   }
-  renderContentUI();renderPreviewSquad();renderShop();
+  renderContentUI();renderPreviewSquad();renderShop();renderFreshnessMenu();
   if(window.Sensory)Sensory.refreshUI();
   if(window.MetaDopamine)window.MetaDopamine.refreshMenu();
   if(window.syncMobileBottomDock)window.syncMobileBottomDock();
@@ -2033,6 +2333,7 @@ function setScreenMode(mode){
   document.body.classList.toggle('playing-mode',mode==='play');
   document.body.classList.toggle('shop-mode',mode==='shop');
   document.body.classList.toggle('result-mode',mode==='result');
+  renderFreshnessHUD();
 }
 function handleMenuTap(e){
   if(document.getElementById('s-menu').style.display==='none')return;
@@ -2107,7 +2408,7 @@ function renderShop(){
   const s=skinById(selectedSkinId),owned=ownsSkin(s.id),equipped=playerData.skins.equipped===s.id;
   const n=document.getElementById('skin-detail-name'),d=document.getElementById('skin-detail-desc'),a=document.getElementById('skin-action');
   if(n)n.textContent=s.name;
-    if(d)d.textContent=s.rarity+' - '+s.desc+(owned?'':' - '+s.price+' coins');
+    if(d)d.textContent=s.rarity+' - '+s.desc+' Passive: '+(activeSkinTrait(s.id).desc||'Fresh style only.')+(owned?'':' - '+s.price+' coins');
   const big=document.getElementById('big-skin-preview'),stage=document.getElementById('big-skin-stage'),rar=document.getElementById('skin-rarity-big');
   if(big){big.className='big-skin skin-'+s.id;big.style.setProperty('--skinColor',s.body);big.style.setProperty('--skinGlow',s.glow);big.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;big.innerHTML='<span class="texture-layer"></span>';}
   if(stage)stage.style.setProperty('--previewGlow',hexToRgba(s.glow,.28));
@@ -4924,6 +5225,11 @@ function spawnGate(z){
     const leftGood=Math.random()>.5;
     L=leftGood?good:bad; R=leftGood?bad:good;
   }
+  if(profile.allowForcedItems&&Math.random()<riskGateChance()){
+    const risk=makeRiskGate();
+    if(Math.random()>.5)L=risk;
+    else R=risk;
+  }
   const halfW=C.laneW*.47;
   const lx=-halfW/2-.18, rx=halfW/2+.18;
 
@@ -5052,6 +5358,8 @@ function applyGate(type,gz){
   const sx=innerWidth*.5, sy=innerHeight*.55;
   // Track choices for boss difficulty calculation
   if(type.good) goodChoices++; else badChoices++;
+  recordFreshEvent(type.good?'good':'bad',1);
+  if(type.t==='risk')recordFreshEvent('risk',1);
 
   crowdJuiceT=type.good?.75:.55;
   crowdJuiceGood=!!type.good;
@@ -5060,7 +5368,7 @@ function applyGate(type,gz){
 
   if(type.t==='add'){
     const before=crowd;
-    const gain=type.v;
+    const gain=Math.max(1,Math.round((type.v||0)*goodGateGainMultiplier()));
     crowd=Math.min(9999,crowd+gain);
     const after=crowd;
     floatTxt(playerGateLabel(type,'+'),sx,sy,type.tc||'#69F0AE',60,'boom');
@@ -5073,6 +5381,8 @@ function applyGate(type,gz){
   } else if(type.t==='mult'){
     const before=crowd;
     crowd=Math.min(9999,Math.floor(crowd*type.v));
+    const extra=Math.max(0,Math.round((crowd-before)*(goodGateGainMultiplier()-1)*.35));
+    if(extra>0)crowd=Math.min(9999,crowd+extra);
     const after=crowd;
     floatTxt(playerGateLabel(type,'BOOST'),sx,sy,type.tc||'#FFD740',72,'spin');
     combo++; streak++; registerGoodCombo();checkFeverTrigger();awardFeverGateReward(type);
@@ -5081,9 +5391,24 @@ function applyGate(type,gz){
     triggerSecretCrowdWave(type,before,after,gz);
     Sensory.play('gateGood',{combo,mult:true});Haptic.pulse('gateGood');
     ringBurst(cxVar,gz); sparkleRain(cxVar,gz,true);
+  } else if(type.t==='risk'){
+    const before=crowd;
+    const gain=Math.max(1,Math.round((type.v||12)*goodGateGainMultiplier()));
+    crowd=Math.min(9999,crowd+gain);
+    riskDebtThisRun+=Math.max(0,Math.round(type.debt||8));
+    const coinGain=Math.max(0,Math.round(type.coin||35));
+   
+    floatTxt('RISK +'+coinGain, sx, sy, type.tc||'#FFD740', 52, 'spin');
+    combo++; streak++; registerGoodCombo();checkFeverTrigger();awardFeverGateReward(type);
+    burst(cxVar,1,gz,0xFFD740,IS_MOBILE?18:32);
+    sparkleRain(cxVar,gz,true);
+    rebuildFormation();
+    rewardFlash('gold'); uiFeedbackPulse('perfect',560); shake(.34);
+    triggerSecretCrowdWave(type,before,crowd,gz);
+    Sensory.play('gateGood',{combo,mult:true});Haptic.pulse('gateGood');
   } else if(type.t==='sub'){
     const before=Math.max(0,Math.round(crowd||0));
-    const kill=Math.min(before,Math.max(0,Math.round(type.v||0)));
+    const kill=Math.min(before,Math.max(0,Math.round((type.v||0)*badGateLossMultiplier())));
     crowd=Math.max(0,before-kill);
     floatTxt(playerGateLabel(type,'-'),sx,sy,type.tc||'#FF5252',62,'boom');
     if(feverActive)endFever('broken');
@@ -5100,7 +5425,7 @@ function applyGate(type,gz){
     rewardFlash('red'); uiFeedbackPulse('bad',460);
     Sensory.play('gateBad');Haptic.pulse('gateBad');
   } else if(type.t==='double_bad'){
-    const kill=Math.floor(crowd/2);
+    const kill=Math.max(1,Math.floor((crowd/2)*badGateLossMultiplier()));
     crowd=Math.max(1,crowd-kill);
     members.splice(members.length-Math.min(kill,members.length));
     rebuildFormation();
@@ -5114,6 +5439,7 @@ function applyGate(type,gz){
     Sensory.play('halve');Haptic.pulse('halve');
   }
   peak=Math.max(peak,crowd);
+  checkMicroGoals(false);
   updateComboUI();
   updateNearMissSystem(0);
   if(combo>=3) floatTxt('x'+combo,innerWidth*.78,innerHeight*.42,'#FFD740',28,'streak');
@@ -5301,7 +5627,8 @@ function updateOrbs(cx,cz,t){
     }
     if(d<crowdR()+.7){
       o.done=true;
-      const gain=goldRushTimer>0?5:1;
+      recordFreshEvent('orbs',1);
+      const gain=(goldRushTimer>0?5:1)+orbPickupBonus();
       crowd=Math.min(9999,crowd+gain);
       floatTxt('+'+(gain),innerWidth*.5+(Math.random()-.5)*80,innerHeight*.54,'#FFD740',26,gain>1?'spin':'');
       burst(o.m.position.x,o.m.position.y,o.m.position.z,0xFFD740,gain>1?16:8);
@@ -5529,6 +5856,11 @@ function updateObstacles(cx,cz,t){
             DramaFX.nearMiss(false);
             if(!IS_MOBILE)burst(cx,1.5,cz,0x00E676,12);
           }
+          recordFreshEvent('dodges',1);
+          const dodgeCoins=activeSkinTrait().dodgeCoins||0;
+          if(dodgeCoins>0){ 
+            floatTxt('DODGE +'+dodgeCoins,innerWidth*.5,innerHeight*.48,'#69F0AE',24,'streak');
+          }
           rewardFlash('green');uiFeedbackPulse(hardDodge?'perfect':'good',hardDodge?520:380);
           combo++;streak++;updateComboUI();
         }
@@ -5608,7 +5940,7 @@ function setBossTapUI(active){
     const feedback=document.getElementById('boss-mini-feedback');if(feedback){feedback.textContent='';feedback.className='';}
     const combo=document.getElementById('boss-mini-combo');if(combo)combo.textContent='0';
     const damage=document.getElementById('boss-mini-damage');if(damage)damage.textContent='0';
-    const misses=document.getElementById('boss-mini-misses');if(misses){misses.textContent='0/'+(profile.bossMiniMisses||C.bossMiniMaxMisses||4);misses.className='';}
+    const misses=document.getElementById('boss-mini-misses');if(misses){misses.textContent='0/'+((profile.bossMiniMisses||C.bossMiniMaxMisses||4)+freshnessBossMissBonus());misses.className='';}
     const cap=document.getElementById('boss-tap-caption');if(cap)cap.textContent='FAST -2 | LATE -1 | ! MISS';
   }
 }
@@ -5621,7 +5953,7 @@ function updateBossTapUI(){
   if(damage)damage.textContent=String(bossMiniDamage);
   const misses=document.getElementById('boss-mini-misses');
   if(misses){
-    const maxMiss=runDifficultyProfile().bossMiniMisses||C.bossMiniMaxMisses||4;
+    const maxMiss=(runDifficultyProfile().bossMiniMisses||C.bossMiniMaxMisses||4)+freshnessBossMissBonus();
     misses.textContent=bossMiniMisses+'/'+maxMiss;
     misses.className=bossMiniMisses>=maxMiss-1?'danger':bossMiniMisses>0?'warn':'';
   }
@@ -5655,7 +5987,8 @@ const BOSS_MINI_PROMPTS=[
   {type:'down',symbol:'↓',instruction:'SWIPE DOWN'},
   {type:'left',symbol:'←',instruction:'SWIPE LEFT'},
   {type:'right',symbol:'→',instruction:'SWIPE RIGHT'},
-  {type:'tap',symbol:'TAP',instruction:'TAP NOW'}
+  {type:'tap',symbol:'TAP',instruction:'TAP NOW'},
+  {type:'boost',symbol:'GO',instruction:'ANY MOVE'}
 ];
 function bossMiniNow(){return performance&&performance.now?performance.now():Date.now();}
 function bossMiniPickPrompt(){
@@ -5700,7 +6033,8 @@ function bossMiniPop(x,y,text,cls){
 }
 function bossMiniApplyDamage(damage){
   const beforeAI=bossRobots.filter(r=>r.alive).length;
-  const applied=Math.min(beforeAI,Math.max(0,Math.round(damage||0)));
+  const extra=(damage>=2?(activeSkinTrait().bossDamage||0):0);
+  const applied=Math.min(beforeAI,Math.max(0,Math.round((damage||0)+extra)));
   if(applied<=0)return beforeAI;
   const afterAI=Math.max(0,beforeAI-applied);
   bossMiniDamage+=applied;
@@ -5773,19 +6107,19 @@ function bossMiniResolvePrompt(result,x,y){
     shake(IS_MOBILE?.08:.12);
     uiFeedbackPulse('bad-soft',320);pulseBossBar('boss-miss-hit');
     bossMiniNextAt=now+(C.bossMiniMissGapMs||260);
-    if(bossMiniMisses>=(runDifficultyProfile().bossMiniMisses||C.bossMiniMaxMisses||4)){endBossMiniGame('fail');return;}
+    if(bossMiniMisses>=((runDifficultyProfile().bossMiniMisses||C.bossMiniMaxMisses||4)+freshnessBossMissBonus())){endBossMiniGame('fail');return;}
   }
   updateBossTapUI();
 }
 function handleBossMiniInput(input,x,y){
   if(!bossMiniActive||!bossTapEnabled||gState!=='BOSS'||!bossClashDone||!bossMiniPrompt)return;
   if(input==='short'){bossMiniResolvePrompt('short',x,y);return;}
-  const correct=input===bossMiniPrompt.type;
+  const correct=input===bossMiniPrompt.type || (bossMiniPrompt.type==='boost'&&input!=='short');
   if(!correct){bossMiniResolvePrompt('wrong',x,y);return;}
   const reaction=bossMiniNow()-bossMiniPromptStarted;
   const profile=runDifficultyProfile();
-  if(reaction<=(profile.bossMiniPerfectMs||C.bossMiniPerfectMs||340))bossMiniResolvePrompt('perfect',x,y);
-  else if(reaction<=(profile.bossMiniLateMs||C.bossMiniLateMs||760))bossMiniResolvePrompt('late',x,y);
+  if(reaction<=((profile.bossMiniPerfectMs||C.bossMiniPerfectMs||340)+freshnessBossMsBonus()))bossMiniResolvePrompt('perfect',x,y);
+  else if(reaction<=((profile.bossMiniLateMs||C.bossMiniLateMs||760)+freshnessBossMsBonus()))bossMiniResolvePrompt('late',x,y);
   else bossMiniResolvePrompt('miss',x,y);
 }
 function bossMiniInputFromVector(dx,dy){
@@ -5906,7 +6240,7 @@ function beginBoss(cz){
   const loseMult=clamp((profile.bossLoseMult||1.18)+levelPressure*.08,.95,1.95);
   const finalMult = playerWins ? Math.min(diffMult, winMult) : Math.max(diffMult, loseMult);
   const minAI=profile.bossMinAI||bossMinAICurve(profile.playerLevel||currentRunLevel||1);
-  const aiCount=Math.max(minAI, Math.round(crowd*finalMult));
+  const aiCount=Math.max(minAI, Math.round(crowd*finalMult)+Math.max(0,Math.round(riskDebtThisRun||0))+Math.max(0,Math.round((activeWorldTrait().bossDebt)||0)));
   const pct=Math.round(goodRatio*100);
   document.getElementById('boss-title').textContent=`${pct}% GOOD`;
 
@@ -6542,6 +6876,7 @@ function doWin(){
   const seq=++winSeq;
   Sensory.play('bossWin');Haptic.pulse('bossWin');
   gState='CELEBRATE';
+  renderFreshnessHUD();
   winDanceStart=elapsed;
   celebrationBurstT=elapsed;
   celebrationCX=0;
@@ -6572,7 +6907,7 @@ function doWin(){
   document.getElementById('win-stars').textContent=stars;
   document.getElementById('win-msg').textContent=survivorResultText(crowd);
   document.getElementById('win-coins').textContent='+'+reward+' COINS';
-  document.getElementById('win-sub').textContent='Level '+currentRunLevel+' complete -> Level '+playerData.level+' unlocked';
+  document.getElementById('win-sub').textContent='Level '+currentRunLevel+' complete -> Level '+playerData.level+' unlocked. '+lastFreshnessResultText;
   updateResultWallet('win',walletBefore);
   updateResultComboBonus('win');
   updateResultRunGoal('win');
@@ -6608,6 +6943,7 @@ function doLose(){
   if(gState==='GAMEOVER')return;
   if(feverActive)endFever('broken');
   gState='GAMEOVER';
+  renderFreshnessHUD();
   Sensory.play('bossLose');Haptic.pulse('bossLose');
   document.getElementById('boss-hud').style.display='none';
   resetBossTapFight();
@@ -6625,7 +6961,7 @@ function doLose(){
   document.getElementById('over-title').textContent=dynamicLoseTitle();
   document.getElementById('over-msg').innerHTML=msg+'<br>Your coins are saved.';
   document.getElementById('over-coins').textContent='+'+reward+' COINS';
-  document.getElementById('over-sub').textContent='Next fix: '+tip.fix+' - Then try again.';
+  document.getElementById('over-sub').textContent='Next fix: '+tip.fix+' - '+lastFreshnessResultText;
   updateResultWallet('over',walletBefore);
   updateResultComboBonus('over');
   updateResultRunGoal('over');
@@ -6772,14 +7108,14 @@ function currentSpeedForRun(){
   const rampMax=(C.speedRampMax||0)*(profile.rampScale==null?1:profile.rampScale);
   const ramp=1+Math.min(rampMax,rampMax*p);
   currentRunSpeedMult=ramp;
-  currentRunSpeed=C.speed*(profile.speedMul||1)*ramp;
+  currentRunSpeed=C.speed*(profile.speedMul||1)*ramp*freshnessSpeedMultiplier();
   return currentRunSpeed;
 }
 function gateSpacingFactorForRun(){
   const profile=runDifficultyProfile();
   const p=runProgress01();
   const compressMax=(C.gateCompressMax||0)*(profile.rampScale==null?1:profile.rampScale);
-  return (1-Math.min(compressMax,compressMax*p))*(profile.gateSpacingMul||1);
+  return (1-Math.min(compressMax,compressMax*p))*(profile.gateSpacingMul||1)*freshnessGateSpacingMultiplier();
 }
 function maybeShowSpeedUpMoment(){
   if(speedUpShown)return;
@@ -6879,6 +7215,7 @@ function updateRunning(dt,t){
   const currentSpeed=currentSpeedForRun();
   dist+=currentSpeed*dt;
   maybeShowSpeedUpMoment();
+  updateRunPacing(runProgress01());
   updateFever(dt);
   if(window.__activeRoadTex){
     const rs=(window.__activeRoadTex.userData&&window.__activeRoadTex.userData.scrollSpeed)||.42;
@@ -6888,6 +7225,7 @@ function updateRunning(dt,t){
   const inv=invertTimer>0?-1:1;
   cxVar+=(tgtX*inv-cxVar)*5.5*dt;
   const cz=dist+5;
+  maybeTriggerComebackEvent(cz);
 
   drawCrowd(cxVar,cz,t);
   updateRunnerTrailFX(dt,t,cz);
@@ -7216,6 +7554,7 @@ function startGame(){
   runRewardGranted=false;lastRunReward=0;
   const usedPreview=window.MenuGameplayPreview&&MenuGameplayPreview.activate(currentRunLevel);
   if(!usedPreview)resetState();
+  startFreshnessRun();
   beginRunCameraIntro();
   triggerRoadPulse(true,.80);
   updateHUD();
