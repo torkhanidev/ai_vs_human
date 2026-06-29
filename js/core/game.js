@@ -2691,6 +2691,9 @@ function activePostRewardPanel(kind){
 function postRewardRole(root,role){
   return root?root.querySelector('[data-role="'+role+'"]'):null;
 }
+function postRewardClaimSmall(root){
+  return root?root.querySelector('.result-bonus-claim small'):null;
+}
 function postGameRewardBase(reward,kind){
   const safe=Math.max(0,Math.round(Number(reward)||0));
   if(kind==='win')return Math.max(20,Math.min(250,Math.round(safe*.18)||20));
@@ -2698,10 +2701,16 @@ function postGameRewardBase(reward,kind){
 }
 function hideAllPostRewardPanels(){
   document.querySelectorAll('.result-bonus-card').forEach(panel=>{
-    panel.classList.remove('show','claimed','stopped','result-x2','result-x3','result-x0','result-x5','result-x1','active-x2','active-x3','active-x0','active-x5','active-x1');
+    panel.classList.remove('show','claimed','stopped','ad-offer','ad-loading','ad-success','ad-failed','result-x2','result-x3','result-x0','result-x5','result-x1','active-x2','active-x3','active-x0','active-x5','active-x1');
     panel.removeAttribute('data-active-mult');
     panel.removeAttribute('data-result-mult');
+    panel.removeAttribute('data-ad-mult');
     panel.querySelectorAll('.result-bonus-zone').forEach(z=>z.classList.remove('won'));
+    const offer=postRewardRole(panel,'ad-offer');
+    if(offer){
+      offer.setAttribute('aria-hidden','true');
+      offer.classList.remove('show');
+    }
     panel.style.display='';
     panel.style.opacity='';
     panel.style.visibility='';
@@ -2710,17 +2719,52 @@ function hideAllPostRewardPanels(){
     panel.style.animation='';
     panel.setAttribute('aria-hidden','true');
   });
+  document.body.classList.remove('post-reward-pending');
 }
 const BONUS_STOP_REGIONS=[
-  {mult:2,from:0.00,to:0.34,cls:'x2',label:'x2 NICE!',tone:'good'},
-  {mult:3,from:0.34,to:0.46,cls:'x3',label:'x3 RARE HIT!',tone:'rare'},
-  {mult:0,from:0.46,to:0.68,cls:'x0',label:'x0 MISS!',tone:'miss'},
-  {mult:5,from:0.68,to:0.75,cls:'x5',label:'x5 JACKPOT!',tone:'jackpot'},
-  {mult:1,from:0.75,to:1.00,cls:'x1',label:'x1 SAFE!',tone:'safe'}
+  {mult:2,from:0.00,to:0.38,cls:'x2',label:'x2 NICE!',tone:'good'},
+  {mult:0,from:0.38,to:0.62,cls:'x0',label:'x0 MISS!',tone:'miss'},
+  {mult:5,from:0.62,to:0.70,cls:'x5',label:'x5 JACKPOT!',tone:'jackpot'},
+  {mult:1,from:0.70,to:1.00,cls:'x1',label:'x1 SAFE!',tone:'safe'}
 ];
+const BONUS_AD_BOOST_POOLS={
+  1:[2,3,4],
+  2:[5,7,10],
+  3:[6,9,12],
+  5:[10,15,20]
+};
 function bonusRegionAt(progress){
   const p=Math.max(0,Math.min(.9999,Number(progress)||0));
   return BONUS_STOP_REGIONS.find(r=>p>=r.from&&p<r.to)||BONUS_STOP_REGIONS[BONUS_STOP_REGIONS.length-1];
+}
+function pickPostRewardAdMult(mult){
+  const pool=BONUS_AD_BOOST_POOLS[mult]||null;
+  if(!pool||!pool.length)return 0;
+  return pool[Math.floor(Math.random()*pool.length)]||0;
+}
+function renderPostRewardAdOffer(st){
+  if(!st)return;
+  const panel=activePostRewardPanel(st.kind);
+  if(!panel)return;
+  const offer=postRewardRole(panel,'ad-offer');
+  if(!offer)return;
+  const before=postRewardRole(panel,'ad-before');
+  const after=postRewardRole(panel,'ad-after');
+  const title=postRewardRole(panel,'ad-title');
+  const sub=postRewardRole(panel,'ad-sub');
+  const watch=panel.querySelector('.result-ad-watch');
+  const show=!!(st.stopped&&st.normalMult>0&&st.offerMult>st.normalMult&&!st.claimed);
+  offer.classList.toggle('show',show);
+  offer.setAttribute('aria-hidden',show?'false':'true');
+  panel.classList.toggle('ad-offer',show);
+  panel.dataset.adMult=show?String(st.offerMult):'';
+  if(show&&st.offerMult===3)panel.classList.add('active-x3');
+  if(!show)panel.classList.remove('active-x3');
+  if(before)before.textContent='x'+(st.normalMult||0);
+  if(after)after.textContent='x'+(st.offerMult||0);
+  if(title)title.textContent=st.adWatched?'AD COMPLETE':st.adLoading?'AD BOOST LOADING':st.offerMult>=10?'MAKE IT x'+st.offerMult:'BOOST TO x'+st.offerMult;
+  if(sub)sub.textContent=st.adWatched?'Boost applied. Coins are flying now.':st.adLoading?'UI preview now. CrazyGames rewarded ad plugs in here later.':'Watch ad to upgrade '+(st.normalCoins||0)+' coins into '+(st.boostedCoins||0)+'.';
+  if(watch)watch.textContent=st.adWatched?'AD COMPLETE':st.adLoading?'LOADING AD':'WATCH AD x'+(st.offerMult||0);
 }
 function clearBonusCursorLoop(st){
   if(!st)return;
@@ -2795,16 +2839,18 @@ function showPostGameReward(kind,reward,resultSeq){
   const base=postGameRewardBase(reward,kind);
   if(base<=0)return;
   postGameRewardShownSeq=postGameRewardResultSeq;
-  postGameRewardState={open:true,claimed:false,kind,base,mult:null,finalCoins:0,seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,lastFrame:0};
+  postGameRewardState={open:true,claimed:false,kind,base,mult:null,normalMult:null,offerMult:0,finalCoins:0,normalCoins:0,boostedCoins:0,adLoading:false,adWatched:false,phase:'running',seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,lastFrame:0};
   hideAllPostRewardPanels();
   const title=postRewardRole(panel,'title');
   const baseEl=postRewardRole(panel,'base');
   const finalEl=postRewardRole(panel,'final');
   const action=postRewardRole(panel,'action');
+  const small=postRewardClaimSmall(panel);
   if(title)title.textContent=kind==='win'?'BOSS BONUS':'RUN BONUS';
   if(baseEl)baseEl.textContent=base;
   if(finalEl)finalEl.textContent='STOP';
   if(action)action.textContent='TAP TO STOP';
+  if(small)small.textContent='STOP BONUS';
   panel.className='result-bonus-card show';
   panel.style.display='flex';
   panel.style.opacity='1';
@@ -2813,6 +2859,8 @@ function showPostGameReward(kind,reward,resultSeq){
   panel.style.filter='none';
   panel.style.animation='none';
   panel.setAttribute('aria-hidden','false');
+  document.body.classList.add('post-reward-pending');
+  renderPostRewardAdOffer(postGameRewardState);
   const hostPanel=panel.closest('.result-panel');
   if(hostPanel){
     try{ hostPanel.scrollTop = Math.max(0, panel.offsetTop - 12); }catch(e){}
@@ -2857,21 +2905,30 @@ function stopPostGameReward(){
   if(!st||st.claimed||st.stopped)return;
   st.running=false;
   st.stopped=true;
+  st.phase='stopped';
   clearBonusCursorLoop(st);
   const region=bonusRegionAt(st.progress);
   st.mult=region.mult;
-  st.finalCoins=Math.max(0,Math.round(st.base*region.mult));
+  st.normalMult=region.mult;
+  st.normalCoins=Math.max(0,Math.round(st.base*region.mult));
+  st.finalCoins=st.normalCoins;
+  st.offerMult=region.mult>0?pickPostRewardAdMult(region.mult):0;
+  st.boostedCoins=st.offerMult>0?Math.max(0,Math.round(st.base*st.offerMult)):0;
+  if(st.offerMult>region.mult)st.phase='offer';
   const panel=activePostRewardPanel(st.kind);
   if(panel){
     panel.classList.add('stopped','result-'+region.cls);
     panel.dataset.resultMult=String(region.mult);
-      const finalEl=postRewardRole(panel,'final');
+    const finalEl=postRewardRole(panel,'final');
     const action=postRewardRole(panel,'action');
+    const small=postRewardClaimSmall(panel);
     if(finalEl)finalEl.textContent=region.mult===0?'NO BONUS':'+'+st.finalCoins;
-    if(action)action.textContent=region.label;
+    if(action)action.textContent=region.mult===0?'NO BONUS':(st.phase==='offer'?'CLAIM OR BOOST':region.label);
+    if(small)small.textContent=region.mult===0?'DONE':'NORMAL CLAIM';
     panel.querySelectorAll('.result-bonus-zone').forEach(z=>z.classList.remove('won'));
     const zone=panel.querySelector('.zone-x'+region.mult);
     if(zone)zone.classList.add('won');
+    renderPostRewardAdOffer(st);
   }
   if(region.mult===5){
     rewardFlash('gold');shake(.75);Sensory.play('chest');Haptic.pulse('chest');
@@ -2883,15 +2940,76 @@ function stopPostGameReward(){
     rewardFlash(region.mult>=3?'blue':'gold');shake(.35);Sensory.play('reward');Haptic.pulse('reward');
     floatTxt(region.label,innerWidth*.5,innerHeight*.34,region.mult>=3?'#00E5FF':'#69F0AE',38,'spin');
   }
-  setTimeout(()=>claimPostGameReward(),620);
 }
-function claimPostGameReward(){
+function watchPostGameRewardAd(){
+  const st=postGameRewardState;
+  if(!st||st.claimed||!st.stopped||st.normalMult<=0||!st.offerMult||st.offerMult<=st.normalMult)return;
+  if(st.adLoading)return;
+  st.adLoading=true;
+  st.phase='ad-loading';
+  const panel=activePostRewardPanel(st.kind);
+  if(panel){
+    panel.classList.add('ad-loading');
+    const title=postRewardRole(panel,'ad-title');
+    const sub=postRewardRole(panel,'ad-sub');
+    const action=postRewardRole(panel,'action');
+    const finalEl=postRewardRole(panel,'final');
+    const small=postRewardClaimSmall(panel);
+    if(title)title.textContent='AD BOOST LOADING';
+    if(sub)sub.textContent='UI preview now. CrazyGames rewarded ad plugs in here later.';
+    if(action)action.textContent='AD BOOST';
+    if(finalEl)finalEl.textContent='x'+st.offerMult;
+    if(small)small.textContent='SIMULATED AD';
+    renderPostRewardAdOffer(st);
+  }
+  Sensory.play('reward');Haptic.pulse('reward');
+  setTimeout(()=>{
+    if(postGameRewardState!==st||st.claimed)return;
+    st.adLoading=false;
+    st.adWatched=true;
+    st.phase='ad-success';
+    st.mult=st.offerMult;
+    st.finalCoins=st.boostedCoins;
+    const p=activePostRewardPanel(st.kind);
+    if(p){
+      p.classList.remove('ad-loading');
+      p.classList.add('ad-success');
+      const title=postRewardRole(p,'ad-title');
+      const sub=postRewardRole(p,'ad-sub');
+      const action=postRewardRole(p,'action');
+      const finalEl=postRewardRole(p,'final');
+      const small=postRewardClaimSmall(p);
+      const watch=p.querySelector('.result-ad-watch');
+      if(title)title.textContent='AD COMPLETE';
+      if(sub)sub.textContent='Boost applied. Coins are flying now.';
+      if(action)action.textContent='BOOSTED x'+st.offerMult;
+      if(finalEl)finalEl.textContent='+'+st.finalCoins;
+      if(small)small.textContent='AD REWARD';
+      if(watch)watch.textContent='AD COMPLETE';
+    }
+    rewardFlash('gold');shake(st.offerMult>=10?.72:.45);Sensory.play(st.offerMult>=10?'chest':'reward');Haptic.pulse('reward');
+    floatTxt('AD BOOST x'+st.offerMult,innerWidth*.5,innerHeight*.32,st.offerMult>=10?'#FFD740':'#00E5FF',46,'spin');
+    setTimeout(()=>claimPostGameReward('ad'),360);
+  },760);
+}
+function claimPostGameReward(mode){
   const st=postGameRewardState;
   if(!st||st.claimed||!playerData){closePostGameReward();return;}
   if(st.running&&!st.stopped){stopPostGameReward();return;}
+  if(st.adLoading)return;
+  if(mode==='ad'&&!st.adWatched){watchPostGameRewardAd();return;}
+  if(mode==='normal'&&!st.adWatched){
+    st.mult=st.normalMult;
+    st.finalCoins=st.normalCoins;
+    st.phase='claim-normal';
+  }
   st.claimed=true;
   const panel=activePostRewardPanel(st.kind);
-  if(panel)panel.classList.add('claimed');
+  if(panel){
+    panel.classList.add('claimed');
+    panel.classList.toggle('ad-success',!!st.adWatched);
+    renderPostRewardAdOffer(st);
+  }
   const before=Math.max(0,Math.round(playerData.coins||0));
   const gained=addCoins(st.finalCoins,{silent:true});
   saveGame();refreshMetaUI();
@@ -2905,7 +3023,7 @@ function claimPostGameReward(){
       animateRewardCoinsToWallet(st.kind,gained);
     }
     postGameRewardBurst();
-    floatTxt('BONUS +'+gained,innerWidth*.5,innerHeight*.34,'#FFD740',44,'spin');
+    floatTxt((st.adWatched?'AD BONUS +':'BONUS +')+gained,innerWidth*.5,innerHeight*.34,st.adWatched?'#FFD740':'#FFD740',44,'spin');
   }else{
     updateResultWallet(st.kind,before);
     postGameRewardBurst();
@@ -2924,7 +3042,11 @@ document.addEventListener('pointerdown',e=>{
   const card=e.target&&e.target.closest?e.target.closest('.result-bonus-card.show'):null;
   if(!card)return;
   if(e.target.closest('.result-bonus-skip'))return;
-  if(e.target.closest('.result-bonus-claim,.result-bonus-track,.result-bonus-hit,.result-bonus-zone,.result-bonus-cursor')){
+  const st=postGameRewardState;
+  const wantsMainClaim=e.target.closest('.result-bonus-claim');
+  const wantsStop=e.target.closest('.result-bonus-track,.result-bonus-hit,.result-bonus-zone,.result-bonus-cursor');
+  if(wantsMainClaim)return;
+  if(wantsStop&&st&&!st.stopped){
     e.preventDefault();
     claimPostGameReward();
   }

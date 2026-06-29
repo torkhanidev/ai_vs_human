@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="css/40-content-missions-chest-world.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=boss-reflex-ui-v150">
-<link rel="stylesheet" href="css/90-late-overrides.css?v=boss-reflex-ui-v150">
+<link rel="stylesheet" href="css/90-late-overrides.css?v=ads-reward-ui-v156">
 </head>
 <body>
 <div id="hud">
@@ -290,17 +290,25 @@
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
-        <div class="result-bonus-zone zone-x3"><b>x3</b><small>RARE</small></div>
         <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
         <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
         <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
         <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
       </div>
+      <div class="result-ad-offer" data-role="ad-offer" aria-hidden="true">
+        <div class="result-ad-kicker">AD BOOST</div>
+        <div class="result-ad-title" data-role="ad-title">MAKE IT BIGGER</div>
+        <div class="result-ad-math"><span data-role="ad-before">x2</span><i></i><b data-role="ad-after">x5</b></div>
+        <div class="result-ad-sub" data-role="ad-sub">Watch ad to upgrade your bonus.</div>
+        <div class="result-ad-actions">
+          <button class="result-ad-watch" type="button" onclick="watchPostGameRewardAd()">WATCH AD</button>
+        </div>
+      </div>
       <div class="result-bonus-actions">
         <button class="result-bonus-claim" type="button" onclick="claimPostGameReward()">
           <span data-role="action">TAP TO STOP</span>
           <b><em data-role="final">READY</em></b>
-          <small>AUTO CLAIM</small>
+          <small>STOP BONUS</small>
         </button>
       </div>
     </div>
@@ -332,17 +340,25 @@
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
-        <div class="result-bonus-zone zone-x3"><b>x3</b><small>RARE</small></div>
         <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
         <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
         <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
         <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
       </div>
+      <div class="result-ad-offer" data-role="ad-offer" aria-hidden="true">
+        <div class="result-ad-kicker">AD BOOST</div>
+        <div class="result-ad-title" data-role="ad-title">MAKE IT BIGGER</div>
+        <div class="result-ad-math"><span data-role="ad-before">x2</span><i></i><b data-role="ad-after">x5</b></div>
+        <div class="result-ad-sub" data-role="ad-sub">Watch ad to upgrade your bonus.</div>
+        <div class="result-ad-actions">
+          <button class="result-ad-watch" type="button" onclick="watchPostGameRewardAd()">WATCH AD</button>
+        </div>
+      </div>
       <div class="result-bonus-actions">
         <button class="result-bonus-claim" type="button" onclick="claimPostGameReward()">
           <span data-role="action">TAP TO STOP</span>
           <b><em data-role="final">READY</em></b>
-          <small>AUTO CLAIM</small>
+          <small>STOP BONUS</small>
         </button>
       </div>
     </div>
@@ -418,7 +434,7 @@
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/core/game.js?v=boss-reflex-ui-v150"></script>
+<script src="js/core/game.js?v=ads-reward-ui-v156"></script>
 <script src="js/ui/mobile-bottom-dock.js?v=boss-reflex-ui-v150"></script>
 </body>
 </html>
