@@ -106,7 +106,7 @@ Each world has unique climate particles (sand, snow, debris, acid rain, glitch r
 
 ## Skins
 
-9 skins across 5 rarity tiers, purchased with coins from the Shop:
+29 skins across 5 rarity tiers, purchased with coins from the Shop. Premium skins continue the collection after Shadow, but no skin costs more than 2,000,000 coins:
 
 | ID | Name | Rarity | Price | Body |
 |---|---|---|---|---|
@@ -119,6 +119,26 @@ Each world has unique climate particles (sand, snow, debris, acid rain, glitch r
 | `toxic` | Toxic | LEGENDARY | 90,000 | `#76FF03` |
 | `galaxy` | Galaxy | MYTHIC | 220,000 | `#6A1B9A` |
 | `shadow` | Shadow | MYTHIC | 500,000 | `#101018` |
+| `plasma` | Plasma Ranger | LEGENDARY | 650,000 | `#00B8D4` |
+| `samurai` | Neon Samurai | LEGENDARY | 720,000 | `#D32F2F` |
+| `angel` | Solar Angel | LEGENDARY | 800,000 | `#FFFDE7` |
+| `demon` | Inferno Demon | LEGENDARY | 890,000 | `#8B0000` |
+| `dragon` | Dragon Scale | LEGENDARY | 980,000 | `#00A86B` |
+| `crystal` | Crystal Prism | LEGENDARY | 1,080,000 | `#B3E5FC` |
+| `thunder` | Thunder Volt | MYTHIC | 1,180,000 | `#263238` |
+| `ghost` | Ghost Phase | MYTHIC | 1,280,000 | `#CFD8DC` |
+| `alien` | Alien Core | MYTHIC | 1,380,000 | `#64DD17` |
+| `royal` | Royal Guard | MYTHIC | 1,480,000 | `#283593` |
+| `pharaoh` | Pharaoh Sun | MYTHIC | 1,580,000 | `#F9A825` |
+| `cyber_king` | Cyber King | MYTHIC | 1,660,000 | `#311B92` |
+| `void_knight` | Void Knight | MYTHIC | 1,740,000 | `#080015` |
+| `frost_lord` | Frost Lord | MYTHIC | 1,800,000 | `#E0F7FA` |
+| `solar_flare` | Solar Flare | MYTHIC | 1,860,000 | `#FFB300` |
+| `quantum_shift` | Quantum Shift | MYTHIC | 1,910,000 | `#00B0FF` |
+| `mecha_gold` | Mecha Gold | MYTHIC | 1,950,000 | `#C8A600` |
+| `crimson_reaper` | Crimson Reaper | MYTHIC | 1,980,000 | `#2A0008` |
+| `nebula_crown` | Nebula Crown | MYTHIC | 1,990,000 | `#4A148C` |
+| `omega_prime` | Omega Prime | MYTHIC | 2,000,000 | `#FFFFFF` |
 
 Rarity colors: COMMON=`#90A4AE`, RARE=`#00E5FF`, EPIC=`#EA80FC`, LEGENDARY=`#FFD740`, MYTHIC=`#FF4081`
 

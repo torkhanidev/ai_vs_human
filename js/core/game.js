@@ -34,9 +34,20 @@ const C={
 };
 
 const DIFFICULTY_LEVEL_OFFSET=2;
+const BONUS_LEVEL_INTERVAL=3;
+const BONUS_LEVEL_REWARD_MULT=1.35;
+const BONUS_LEVEL_ORB_COIN_BASE=2;
 function gameplayDifficultyLevel(level){
   const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
   return playerLv+DIFFICULTY_LEVEL_OFFSET;
+}
+function isBonusLevel(level){
+  const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
+  return playerLv%BONUS_LEVEL_INTERVAL===0;
+}
+function bonusLevelOrbCoinValue(level){
+  const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
+  return BONUS_LEVEL_ORB_COIN_BASE+Math.min(8,Math.floor(playerLv/6));
 }
 
 function drawGatePersonIcon(ctx,x,y,s,opt={}){
@@ -589,7 +600,27 @@ const SKINS=[
   {id:'gold',name:'Gold Hero',rarity:'LEGENDARY',price:42000,body:'#FFD740',accent:'#FFF59D',skin:'#FFE082',shoe:'#5D4037',glow:'#FFD740',desc:'Premium gold shine.'},
   {id:'toxic',name:'Toxic',rarity:'LEGENDARY',price:90000,body:'#76FF03',accent:'#C6FF00',skin:'#B2FF59',shoe:'#1B5E20',glow:'#76FF03',desc:'Green bubbles and danger energy.'},
   {id:'galaxy',name:'Galaxy',rarity:'MYTHIC',price:220000,body:'#6A1B9A',accent:'#00E5FF',skin:'#CE93D8',shoe:'#09001A',glow:'#EA80FC',desc:'Mythic endgame skin with stars.'},
-  {id:'shadow',name:'Shadow',rarity:'MYTHIC',price:500000,body:'#101018',accent:'#FF1744',skin:'#B0BEC5',shoe:'#000000',glow:'#FF1744',desc:'Dark elite final skin. Ultra rare.'}
+  {id:'shadow',name:'Shadow',rarity:'MYTHIC',price:500000,body:'#101018',accent:'#FF1744',skin:'#B0BEC5',shoe:'#000000',glow:'#FF1744',desc:'Dark elite final skin. Ultra rare.'},
+  {id:'plasma',name:'Plasma Ranger',rarity:'LEGENDARY',price:650000,body:'#00B8D4',accent:'#FF4FD8',skin:'#C8F7FF',shoe:'#050019',glow:'#00E5FF',fx:'plasma',desc:'Premium plasma suit with pulsing energy.'},
+  {id:'samurai',name:'Neon Samurai',rarity:'LEGENDARY',price:720000,body:'#D32F2F',accent:'#FFD740',skin:'#FFE0B2',shoe:'#11050A',glow:'#FF4081',fx:'samurai',desc:'Blade-bright armor for clean boss hits.'},
+  {id:'angel',name:'Solar Angel',rarity:'LEGENDARY',price:800000,body:'#FFFDE7',accent:'#FFD740',skin:'#FFE0B2',shoe:'#6D4C41',glow:'#FFF176',fx:'angel',desc:'Radiant rescue armor with soft gold wings.'},
+  {id:'demon',name:'Inferno Demon',rarity:'LEGENDARY',price:890000,body:'#8B0000',accent:'#FF1744',skin:'#FF8A65',shoe:'#1A0000',glow:'#FF1744',fx:'demon',desc:'High-risk inferno gear with fierce payout.'},
+  {id:'dragon',name:'Dragon Scale',rarity:'LEGENDARY',price:980000,body:'#00A86B',accent:'#FFD740',skin:'#B2FF59',shoe:'#06351F',glow:'#69F0AE',fx:'dragon',desc:'Scaled armor that shrugs off bad gates.'},
+  {id:'crystal',name:'Crystal Prism',rarity:'LEGENDARY',price:1080000,body:'#B3E5FC',accent:'#EA80FC',skin:'#E1F5FE',shoe:'#512DA8',glow:'#B388FF',fx:'crystal',desc:'Prismatic suit with sharper boss focus.'},
+  {id:'thunder',name:'Thunder Volt',rarity:'MYTHIC',price:1180000,body:'#263238',accent:'#FFEA00',skin:'#CFD8DC',shoe:'#0B0E11',glow:'#FFEA00',fx:'thunder',desc:'Storm armor that cracks boss shields.'},
+  {id:'ghost',name:'Ghost Phase',rarity:'MYTHIC',price:1280000,body:'#CFD8DC',accent:'#80D8FF',skin:'#ECEFF1',shoe:'#263238',glow:'#B0BEC5',fx:'ghost',desc:'Phase suit that rewards clean dodges.'},
+  {id:'alien',name:'Alien Core',rarity:'MYTHIC',price:1380000,body:'#64DD17',accent:'#18FFFF',skin:'#CCFF90',shoe:'#102A14',glow:'#18FFFF',fx:'alien',desc:'Bio-core skin that boosts orbs and gates.'},
+  {id:'royal',name:'Royal Guard',rarity:'MYTHIC',price:1480000,body:'#283593',accent:'#FFD740',skin:'#D7CCC8',shoe:'#100A3D',glow:'#FFD740',fx:'royal',desc:'Regal armor with better run payouts.'},
+  {id:'pharaoh',name:'Pharaoh Sun',rarity:'MYTHIC',price:1580000,body:'#F9A825',accent:'#00B8D4',skin:'#FFCC80',shoe:'#3E2723',glow:'#FFD740',fx:'pharaoh',desc:'Ancient sun tech that empowers orbs.'},
+  {id:'cyber_king',name:'Cyber King',rarity:'MYTHIC',price:1660000,body:'#311B92',accent:'#00E5FF',skin:'#B39DDB',shoe:'#050014',glow:'#00E5FF',fx:'cyber',desc:'Royal grid armor for boss reflex control.'},
+  {id:'void_knight',name:'Void Knight',rarity:'MYTHIC',price:1740000,body:'#080015',accent:'#7C4DFF',skin:'#B0BEC5',shoe:'#000000',glow:'#7C4DFF',fx:'void',desc:'Elite knight armor that breaks bosses faster.'},
+  {id:'frost_lord',name:'Frost Lord',rarity:'MYTHIC',price:1800000,body:'#E0F7FA',accent:'#40C4FF',skin:'#B2EBF2',shoe:'#01579B',glow:'#84FFFF',fx:'frost',desc:'Frozen crown armor with strong red-gate guard.'},
+  {id:'solar_flare',name:'Solar Flare',rarity:'MYTHIC',price:1860000,body:'#FFB300',accent:'#FF3D00',skin:'#FFD180',shoe:'#4E2600',glow:'#FFAB00',fx:'solar',desc:'Sun-charged suit for stronger good gates.'},
+  {id:'quantum_shift',name:'Quantum Shift',rarity:'MYTHIC',price:1910000,body:'#00B0FF',accent:'#D500F9',skin:'#B3E5FC',shoe:'#0D0030',glow:'#EA80FC',fx:'quantum',desc:'Reality-shift suit with boss and orb bonuses.'},
+  {id:'mecha_gold',name:'Mecha Gold',rarity:'MYTHIC',price:1950000,body:'#C8A600',accent:'#00E5FF',skin:'#FFE082',shoe:'#212121',glow:'#FFD740',fx:'mecha',desc:'Premium mecha armor with top-tier rewards.'},
+  {id:'crimson_reaper',name:'Crimson Reaper',rarity:'MYTHIC',price:1980000,body:'#2A0008',accent:'#FF1744',skin:'#B0BEC5',shoe:'#000000',glow:'#FF1744',fx:'reaper',desc:'Final-strike cloak with boss pressure.'},
+  {id:'nebula_crown',name:'Nebula Crown',rarity:'MYTHIC',price:1990000,body:'#4A148C',accent:'#FF80AB',skin:'#CE93D8',shoe:'#09001A',glow:'#FF80AB',fx:'nebula',desc:'Cosmic crown suit with stellar orb pull.'},
+  {id:'omega_prime',name:'Omega Prime',rarity:'MYTHIC',price:2000000,body:'#FFFFFF',accent:'#00E676',skin:'#E0F2F1',shoe:'#101818',glow:'#00E676',fx:'omega',desc:'Ultimate premium skin with balanced power.'}
 ];
 const RARITY_COLORS={COMMON:'#90A4AE',RARE:'#00E5FF',EPIC:'#EA80FC',LEGENDARY:'#FFD740',MYTHIC:'#FF4081'};
 const MISSION_DEFS=[
@@ -773,7 +804,27 @@ const SKIN_TRAITS={
   gold:{name:'Premium Loot',desc:'Run rewards are slightly higher.',rewardMult:1.05},
   toxic:{name:'Regen Boost',desc:'Comeback rescue gives extra humans.',comebackBoost:6},
   galaxy:{name:'Star Pull',desc:'Orbs are worth more during runs.',orbBonus:1},
-  shadow:{name:'Boss Breaker',desc:'Perfect boss hits deal +1 damage.',bossDamage:1}
+  shadow:{name:'Boss Breaker',desc:'Perfect boss hits deal +1 damage.',bossDamage:1},
+  plasma:{name:'Plasma Surge',desc:'Good gates add more humans.',goodBonus:.08},
+  samurai:{name:'Blade Focus',desc:'Perfect boss hits deal +1 damage and dodges pay coins.',bossDamage:1,dodgeCoins:5},
+  angel:{name:'Rescue Halo',desc:'Comeback rescue is stronger and red gates hurt less.',comebackBoost:10,badReduction:.05},
+  demon:{name:'Inferno Payout',desc:'Run rewards are higher.',rewardMult:1.08},
+  dragon:{name:'Scale Guard',desc:'Red gates hurt 12% less.',badReduction:.12},
+  crystal:{name:'Prism Focus',desc:'Boss reflex timing is much easier.',bossMiniMs:130},
+  thunder:{name:'Storm Breaker',desc:'Perfect boss hits deal +1 damage.',bossDamage:1},
+  ghost:{name:'Phase Dodge',desc:'Obstacle dodges give bigger bonus coins.',dodgeCoins:12},
+  alien:{name:'Core Mutation',desc:'Orbs are worth more and good gates add extra crowd.',orbBonus:1,goodBonus:.04},
+  royal:{name:'Royal Bonus',desc:'Run rewards are higher.',rewardMult:1.07},
+  pharaoh:{name:'Sun Relic',desc:'Orbs are worth much more during runs.',orbBonus:2},
+  cyber_king:{name:'King Scanner',desc:'Boss reflex timing is greatly easier.',bossMiniMs:150},
+  void_knight:{name:'Void Breaker',desc:'Perfect boss hits deal +1 damage.',bossDamage:1},
+  frost_lord:{name:'Frost Wall',desc:'Red gates hurt 16% less.',badReduction:.16},
+  solar_flare:{name:'Solar Charge',desc:'Good gates add a lot more humans.',goodBonus:.10},
+  quantum_shift:{name:'Quantum Pull',desc:'Boss timing is easier and orbs are worth more.',bossMiniMs:100,orbBonus:1},
+  mecha_gold:{name:'Mecha Loot',desc:'Run rewards are much higher.',rewardMult:1.10},
+  crimson_reaper:{name:'Reaper Strike',desc:'Boss hits are stronger and rewards improve.',bossDamage:1,rewardMult:1.04},
+  nebula_crown:{name:'Nebula Pull',desc:'Orbs are worth much more and boss timing is easier.',orbBonus:2,bossMiniMs:80},
+  omega_prime:{name:'Omega Balance',desc:'Good gates, defense, and rewards all improve.',goodBonus:.08,badReduction:.08,rewardMult:1.06}
 };
 let playerData=null;
 let selectedSkinId='default';
@@ -856,9 +907,11 @@ function firstForcedZCurve(playerLv){return Math.round(pacingCurveValue(playerLv
 function runDifficultyProfile(level){
   const playerLv=Math.max(1,Math.round(num(level || currentRunLevel || (playerData&&playerData.level) || 1,1)));
   const lv=gameplayDifficultyLevel(playerLv);
+  const bonus=isBonusLevel(playerLv);
   return{
     level:lv,
     playerLevel:playerLv,
+    bonusLevel:bonus,
     difficultyOffset:DIFFICULTY_LEVEL_OFFSET,
     allowGates:playerLv>=1,
     allowBadGates:playerLv>=1,
@@ -875,7 +928,7 @@ function runDifficultyProfile(level){
     obstacleSpacingMul:obstacleSpacingCurve(playerLv),
     forcedSpacingMul:forcedSpacingCurve(playerLv),
     firstGateZ:firstGateZCurve(playerLv),
-    firstOrbZ:firstOrbZCurve(playerLv),
+    firstOrbZ:bonus?14:firstOrbZCurve(playerLv),
     firstObstacleZ:firstObstacleZCurve(playerLv),
     firstForcedZ:firstForcedZCurve(playerLv),
     previewSecondGateZ:firstGateZCurve(playerLv)+52,
@@ -891,7 +944,7 @@ function runDifficultyProfile(level){
     bossMiniMisses:lv<=5?5:lv<=8?4:3,
     bossMiniPerfectMs:lv<=5?420:lv<=8?370:340,
     bossMiniLateMs:lv<=5?920:lv<=8?820:760,
-    lesson:playerLv<=1?'GOOD VS BAD':playerLv===2?'DODGE + COPY':playerLv===3?'REFLEX BOSS':playerLv===4?'POWER ITEMS':playerLv===5?'DANGER GATES':'FULL RUN'
+    lesson:bonus?'BONUS COIN LEVEL':playerLv<=1?'GOOD VS BAD':playerLv===2?'DODGE + COPY':playerLv===3?'REFLEX BOSS':playerLv===4?'POWER ITEMS':playerLv===5?'DANGER GATES':'FULL RUN'
   };
 }
 function gateAllowedForProgression(g,profile){
@@ -2357,6 +2410,26 @@ function openShop(){
 }
 function closeShop(){setScreenMode('menu');gState='MENU';document.getElementById('s-shop').style.display='none';document.getElementById('s-menu').style.display='flex';refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)setTimeout(()=>MenuGameplayPreview.ensure(),0);}
 function rarityColor(r){return RARITY_COLORS[r]||'#fff';}
+function shortCoinAmount(v){
+  const n=Math.max(0,Math.round(num(v,0)));
+  if(n>=1000000){
+    const digits=n>=10000000?1:2;
+    return (n/1000000).toFixed(digits).replace(/\.0+$/,'').replace(/(\.\d)0$/,'$1')+'M';
+  }
+  if(n>=1000)return (n/1000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'K';
+  return String(n);
+}
+function skinPriceLabel(v){return shortCoinAmount(v)+' COINS';}
+function skinAuraLabel(s){
+  if(!s||s.id==='default')return 'STARTER AURA';
+  if(s.fx&&s.rarity==='MYTHIC')return s.price>=1900000?'ULTIMATE AURA':'MYTHIC AURA';
+  if(s.fx&&s.rarity==='LEGENDARY')return 'PREMIUM AURA';
+  if(s.rarity==='MYTHIC')return 'ELITE AURA';
+  if(s.rarity==='LEGENDARY')return 'GOLD AURA';
+  if(s.rarity==='EPIC')return 'POWER AURA';
+  if(s.rarity==='RARE')return 'ELEMENTAL AURA';
+  return 'CLASSIC AURA';
+}
 function hexToRgba(hex,a){
   hex=(hex||'#00E5FF').replace('#','');
   if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
@@ -2369,6 +2442,7 @@ function renderPreviewSquad(){
   const s=skinById(playerData.skins.equipped);wrap.innerHTML='';
   for(let i=0;i<5;i++){
     const d=document.createElement('div');d.className='preview-human skin-'+s.id;
+    d.dataset.fx=s.fx||s.id;
     d.style.setProperty('--skinColor',s.body);d.style.setProperty('--skinGlow',s.glow);d.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;d.innerHTML='<span class="texture-layer"></span>'; 
     d.style.animationDelay=(i*.08)+'s';wrap.appendChild(d);
   }
@@ -2380,7 +2454,7 @@ function updateNextSkinWidgets(prefix){
     setText(prefix+'text','All skins unlocked!');setText(prefix+'percent','100%');setBar(prefix+'fill',100);return;
   }
   const pct=Math.min(100,playerData.coins/next.price*100);
-  setText(prefix+'text',next.name+' - '+Math.min(playerData.coins,next.price)+'/'+next.price+' COINS');
+  setText(prefix+'text',next.name+' - '+shortCoinAmount(Math.min(playerData.coins,next.price))+'/'+shortCoinAmount(next.price)+' COINS');
   setText(prefix+'percent',Math.round(pct)+'%');setBar(prefix+'fill',pct);
 }
 function updateResultNextSkin(kind){
@@ -2389,7 +2463,7 @@ function updateResultNextSkin(kind){
   if(!t||!f)return;
   if(!next){t.textContent='Collection complete - all skins unlocked!';f.style.width='100%';return;}
   const pct=Math.min(100,playerData.coins/next.price*100);
-  t.textContent='Next skin: '+next.name+' - '+Math.min(playerData.coins,next.price)+'/'+next.price+' coins';
+  t.textContent='Next skin: '+next.name+' - '+shortCoinAmount(Math.min(playerData.coins,next.price))+'/'+shortCoinAmount(next.price)+' coins';
   f.style.width=pct+'%';
 }
 function renderShop(){
@@ -2398,32 +2472,35 @@ function renderShop(){
   for(const s of SKINS){
     const owned=ownsSkin(s.id),equipped=playerData.skins.equipped===s.id,buyable=!owned&&playerData.coins>=s.price;
     const card=document.createElement('div');card.className='skin-card'+(selectedSkinId===s.id?' selected':'')+(owned?'':' locked')+(buyable?' buyable':'')+(owned?' affordable':'');
+    if(s.fx)card.classList.add('premium-skin');
+    card.dataset.rarity=s.rarity;
     card.style.borderColor=selectedSkinId===s.id?rarityColor(s.rarity):rarityColor(s.rarity);
     card.style.setProperty('--rarityColor',rarityColor(s.rarity));
+    card.style.setProperty('--skinGlow',s.glow);
     card.onclick=()=>{CoinFX.remember(card);selectedSkinId=s.id;renderShop();};
-    const price=s.price>0?`<div class="price-tag">${owned?'OWNED':s.price+' COINS'}</div>`:'';
-    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}`;
+    const price=s.price>0?`<div class="price-tag">${owned?'OWNED':shortCoinAmount(s.price)}</div>`:'';
+    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" data-fx="${s.fx||s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}`;
     grid.appendChild(card);
   }
   const s=skinById(selectedSkinId),owned=ownsSkin(s.id),equipped=playerData.skins.equipped===s.id;
   const n=document.getElementById('skin-detail-name'),d=document.getElementById('skin-detail-desc'),a=document.getElementById('skin-action');
   if(n)n.textContent=s.name;
-    if(d)d.textContent=s.rarity+' - '+s.desc+' Passive: '+(activeSkinTrait(s.id).desc||'Fresh style only.')+(owned?'':' - '+s.price+' coins');
+    if(d)d.textContent=s.rarity+' - '+s.desc+' Passive: '+(activeSkinTrait(s.id).desc||'Fresh style only.')+(owned?'':' - '+skinPriceLabel(s.price));
   const big=document.getElementById('big-skin-preview'),stage=document.getElementById('big-skin-stage'),rar=document.getElementById('skin-rarity-big');
-  if(big){big.className='big-skin skin-'+s.id;big.style.setProperty('--skinColor',s.body);big.style.setProperty('--skinGlow',s.glow);big.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;big.innerHTML='<span class="texture-layer"></span>';}
-  if(stage)stage.style.setProperty('--previewGlow',hexToRgba(s.glow,.28));
-  if(rar){rar.textContent=s.rarity;rar.style.color=rarityColor(s.rarity);}
+  if(big){big.className='big-skin skin-'+s.id;big.dataset.fx=s.fx||s.id;big.style.setProperty('--skinColor',s.body);big.style.setProperty('--skinGlow',s.glow);big.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;big.innerHTML='<span class="texture-layer"></span>';}
+  if(stage){stage.style.setProperty('--previewGlow',hexToRgba(s.glow,.32));stage.style.setProperty('--previewAura',hexToRgba(s.glow,.48));stage.style.setProperty('--rarityColor',rarityColor(s.rarity));}
+  if(rar){rar.innerHTML='<span>'+s.rarity+'</span><small>'+skinAuraLabel(s)+'</small>';rar.style.color=rarityColor(s.rarity);rar.style.setProperty('--rarityColor',rarityColor(s.rarity));rar.style.setProperty('--skinAura',hexToRgba(s.glow,.50));}
   const prog=document.getElementById('shop-progress');
   if(prog){
-    if(!owned&&s.price>0){prog.classList.add('show');const pct=Math.min(100,playerData.coins/s.price*100);setText('shop-progress-text',Math.min(playerData.coins,s.price)+'/'+s.price+' coins');setText('shop-progress-percent',Math.round(pct)+'%');setBar('shop-progress-fill',pct);}else{prog.classList.remove('show');}
+    if(!owned&&s.price>0){prog.classList.add('show');const pct=Math.min(100,playerData.coins/s.price*100);setText('shop-progress-text',shortCoinAmount(Math.min(playerData.coins,s.price))+'/'+shortCoinAmount(s.price)+' coins');setText('shop-progress-percent',Math.round(pct)+'%');setBar('shop-progress-fill',pct);}else{prog.classList.remove('show');}
   }
   renderContentUI();
   if(a){
     a.className='shop-action';
     if(equipped){a.textContent='EQUIPPED';a.classList.add('locked');}
     else if(owned){a.textContent='EQUIP';a.classList.add('equip');}
-    else if(playerData.coins>=s.price){a.textContent='BUY '+s.price+' COINS';}
-    else{a.textContent='NEED '+(s.price-playerData.coins)+' COINS';a.classList.add('locked');}
+    else if(playerData.coins>=s.price){a.textContent='BUY '+skinPriceLabel(s.price);}
+    else{a.textContent='NEED '+skinPriceLabel(s.price-playerData.coins);a.classList.add('locked');}
   }
 }
 function skinAction(){
@@ -2975,6 +3052,99 @@ function continueToWorldMap(){
     if(window.openSpaceMap)window.openSpaceMap(null,{autoSelectNew:true,worldId:id,fromResult:true});
   },140);
 }
+function drawSpecialSkinTex(ctx,s){
+  const fx=s.fx||s.id, accent=s.accent||'#fff', glow=s.glow||accent, body=s.body||accent;
+  const w=192,h=192;
+  const line=(col,width,points)=>{
+    ctx.strokeStyle=col;ctx.lineWidth=width;ctx.beginPath();
+    points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+    ctx.stroke();
+  };
+  const dot=(x,y,r,col)=>{
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  };
+  ctx.save();
+  ctx.globalAlpha=.92;
+  if(fx==='plasma'){
+    ctx.fillStyle='rgba(0,0,0,.24)';ctx.fillRect(0,0,w,h);
+    for(let i=0;i<9;i++)line(i%2?accent:glow,3,[[Math.random()*w,0],[40+Math.random()*112,96],[Math.random()*w,h]]);
+    for(let i=0;i<24;i++)dot(Math.random()*w,Math.random()*h,3+Math.random()*9,hexToRgba(i%2?accent:glow,.22));
+  }else if(fx==='samurai'){
+    ctx.fillStyle='rgba(20,0,0,.30)';ctx.fillRect(0,0,w,h);
+    for(let y=12;y<h;y+=25){ctx.fillStyle=hexToRgba(accent,.22);ctx.fillRect(0,y,w,8);}
+    line(glow,7,[[12,170],[178,24]]);line('rgba(255,255,255,.65)',2,[[28,160],[178,42]]);
+  }else if(fx==='angel'){
+    const rg=ctx.createRadialGradient(96,40,8,96,96,130);rg.addColorStop(0,hexToRgba(glow,.65));rg.addColorStop(1,'transparent');ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);
+    for(let a=-70;a<=70;a+=14)line(hexToRgba(accent,.36),3,[[96,26],[96+Math.sin(a)*96,h]]);
+    ctx.strokeStyle=hexToRgba('#ffffff',.52);ctx.lineWidth=4;ctx.beginPath();ctx.arc(96,62,36,0,Math.PI*2);ctx.stroke();
+  }else if(fx==='demon'){
+    ctx.fillStyle='rgba(0,0,0,.34)';ctx.fillRect(0,0,w,h);
+    for(let i=0;i<22;i++){ctx.fillStyle=i%2?hexToRgba(accent,.44):hexToRgba(glow,.36);ctx.beginPath();ctx.ellipse(Math.random()*w,130+Math.random()*66,8+Math.random()*18,20+Math.random()*32,Math.random()*Math.PI,0,Math.PI*2);ctx.fill();}
+    for(let i=0;i<8;i++)line(hexToRgba('#000000',.45),3,[[Math.random()*w,0],[Math.random()*w,h]]);
+  }else if(fx==='dragon'){
+    ctx.fillStyle=hexToRgba('#001b10',.30);ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle=hexToRgba(accent,.55);ctx.lineWidth=3;
+    for(let y=-10;y<h+20;y+=18){for(let x=-12;x<w+20;x+=24){ctx.beginPath();ctx.arc(x+(y%36?12:0),y,15,0,Math.PI);ctx.stroke();}}
+  }else if(fx==='crystal'){
+    for(let i=0;i<26;i++){ctx.fillStyle=hexToRgba(i%2?accent:glow,.25);ctx.beginPath();const x=Math.random()*w,y=Math.random()*h,r=16+Math.random()*28;ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();ctx.fill();ctx.strokeStyle=hexToRgba('#ffffff',.28);ctx.stroke();}
+  }else if(fx==='thunder'){
+    ctx.fillStyle='rgba(0,0,0,.34)';ctx.fillRect(0,0,w,h);
+    for(let x=18;x<w;x+=45)line(glow,6,[[x,0],[x+28,52],[x+7,56],[x+48,130],[x+22,124],[x+46,h]]);
+    for(let i=0;i<18;i++)dot(Math.random()*w,Math.random()*h,2,hexToRgba(accent,.75));
+  }else if(fx==='ghost'){
+    ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(0,0,w,h);
+    for(let y=6;y<h;y+=22){ctx.strokeStyle=hexToRgba(glow,.34);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(44,y+28,112,y-24,w,y+12);ctx.stroke();}
+  }else if(fx==='alien'){
+    ctx.fillStyle=hexToRgba('#001d12',.28);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<34;i++){dot(Math.random()*w,Math.random()*h,5+Math.random()*11,hexToRgba(i%3?accent:glow,.32));}
+    ctx.strokeStyle=hexToRgba(glow,.55);ctx.lineWidth=2;for(let i=0;i<10;i++){ctx.beginPath();ctx.ellipse(Math.random()*w,Math.random()*h,18,7,Math.random()*Math.PI,0,Math.PI*2);ctx.stroke();}
+  }else if(fx==='royal'){
+    ctx.fillStyle='rgba(0,0,35,.30)';ctx.fillRect(0,0,w,h);
+    for(let y=14;y<h;y+=38)line(hexToRgba(accent,.48),5,[[0,y],[48,y+22],[96,y],[144,y+22],[w,y]]);
+    for(let i=0;i<5;i++)dot(34+i*31,42,5,hexToRgba(glow,.65));
+  }else if(fx==='pharaoh'){
+    const rg=ctx.createRadialGradient(96,82,8,96,82,120);rg.addColorStop(0,hexToRgba(accent,.70));rg.addColorStop(1,'transparent');ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);
+    for(let a=0;a<Math.PI*2;a+=Math.PI/12)line(hexToRgba(accent,.34),3,[[96,82],[96+Math.cos(a)*120,82+Math.sin(a)*120]]);
+    for(let y=20;y<h;y+=34)line(hexToRgba(glow,.50),2,[[0,y],[w,y+12]]);
+  }else if(fx==='cyber'){
+    ctx.strokeStyle=hexToRgba(glow,.44);ctx.lineWidth=2;
+    for(let v=0;v<=w;v+=18){line(hexToRgba(glow,.30),1,[[v,0],[v,h]]);line(hexToRgba(accent,.24),1,[[0,v],[w,v]]);}
+    for(let i=0;i<14;i++){ctx.fillStyle=hexToRgba(accent,.30);ctx.fillRect(Math.random()*150,Math.random()*170,30,7);}
+  }else if(fx==='void'){
+    ctx.fillStyle='rgba(0,0,0,.58)';ctx.fillRect(0,0,w,h);
+    for(let i=0;i<130;i++)dot(Math.random()*w,Math.random()*h,Math.random()*2.2,hexToRgba(i%6?accent:glow,.75));
+    line(hexToRgba(glow,.42),4,[[24,130],[62,80],[105,110],[150,40],[182,88]]);
+  }else if(fx==='frost'){
+    ctx.fillStyle=hexToRgba('#ffffff',.16);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<20;i++){const x=Math.random()*w,y=Math.random()*h;line(hexToRgba(glow,.46),2,[[x,y],[x+22,y-18],[x+36,y-4]]);}
+    for(let i=0;i<36;i++)dot(Math.random()*w,Math.random()*h,2+Math.random()*3,hexToRgba('#ffffff',.42));
+  }else if(fx==='solar'){
+    const rg=ctx.createRadialGradient(96,120,10,96,96,140);rg.addColorStop(0,hexToRgba(accent,.76));rg.addColorStop(.45,hexToRgba(glow,.34));rg.addColorStop(1,'transparent');ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);
+    for(let a=0;a<Math.PI*2;a+=Math.PI/10)line(hexToRgba(glow,.46),5,[[96,96],[96+Math.cos(a)*128,96+Math.sin(a)*128]]);
+  }else if(fx==='quantum'){
+    ctx.strokeStyle=hexToRgba(accent,.44);ctx.lineWidth=3;
+    for(let i=0;i<18;i++){const x=Math.random()*160,y=Math.random()*160,r=14+Math.random()*18;ctx.strokeRect(x,y,r,r);ctx.strokeRect(x+5,y+5,r,r);}
+    for(let i=0;i<24;i++)dot(Math.random()*w,Math.random()*h,2+Math.random()*4,hexToRgba(glow,.60));
+  }else if(fx==='mecha'){
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle=hexToRgba('#ffffff',.24);ctx.lineWidth=3;
+    for(let y=10;y<h;y+=36){for(let x=8;x<w;x+=42){ctx.strokeRect(x,y,31,24);dot(x+25,y+7,3,hexToRgba(glow,.55));}}
+    line(hexToRgba(accent,.48),5,[[0,112],[w,72]]);
+  }else if(fx==='reaper'){
+    ctx.fillStyle='rgba(0,0,0,.52)';ctx.fillRect(0,0,w,h);
+    for(let i=0;i<10;i++)line(hexToRgba(glow,.50),4,[[Math.random()*w,0],[Math.random()*w,h]]);
+    for(let y=0;y<h;y+=20){ctx.strokeStyle=hexToRgba('#000000',.40);ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(0,y);ctx.quadraticCurveTo(96,y+28,w,y);ctx.stroke();}
+  }else if(fx==='nebula'){
+    const rg=ctx.createRadialGradient(70,60,6,96,96,150);rg.addColorStop(0,hexToRgba(accent,.62));rg.addColorStop(.38,hexToRgba(glow,.30));rg.addColorStop(1,'transparent');ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);
+    for(let i=0;i<160;i++)dot(Math.random()*w,Math.random()*h,Math.random()*2.2,hexToRgba(i%7?'#ffffff':glow,.78));
+  }else if(fx==='omega'){
+    ctx.fillStyle=hexToRgba('#ffffff',.18);ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle=hexToRgba(glow,.46);ctx.lineWidth=3;
+    for(let i=0;i<6;i++){ctx.beginPath();ctx.arc(96,96,18+i*13,0,Math.PI*2);ctx.stroke();}
+    for(let x=0;x<w;x+=32)line(hexToRgba(accent,.36),2,[[x,0],[w-x,h]]);
+  }
+  ctx.restore();
+}
 function makeSkinTex(s){
   if(skinTexCache[s.id])return skinTexCache[s.id];
   const cv=document.createElement('canvas');cv.width=192;cv.height=192;const ctx=cv.getContext('2d');
@@ -3010,6 +3180,8 @@ function makeSkinTex(s){
     const ng=ctx.createRadialGradient(60,60,10,96,96,140);ng.addColorStop(0,'rgba(234,128,252,.55)');ng.addColorStop(.42,'rgba(0,229,255,.20)');ng.addColorStop(1,'transparent');ctx.fillStyle=ng;ctx.fillRect(0,0,192,192);
   } else if(s.id==='shadow'){
     ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(0,0,192,192);ctx.strokeStyle='rgba(255,23,68,.40)';ctx.lineWidth=3;for(let y=0;y<192;y+=16){ctx.beginPath();ctx.moveTo(0,y);ctx.quadraticCurveTo(96,y+24,192,y);ctx.stroke();}
+  } else if(s.fx){
+    drawSpecialSkinTex(ctx,s);
   } else {
     ctx.strokeStyle='rgba(255,255,255,.20)';ctx.lineWidth=3;for(let x=-128;x<256;x+=24){ctx.beginPath();ctx.moveTo(x,192);ctx.lineTo(x+150,0);ctx.stroke();}
   }
@@ -3020,8 +3192,9 @@ function applyEquippedSkin(){
   if(!playerData||!matHumanBody)return;
   const s=skinById(playerData.skins.equipped);const tex=makeSkinTex(s);
   const legendary=s.rarity==='LEGENDARY'||s.rarity==='MYTHIC';
-  matHumanBody.color.set(s.body);matHumanBody.emissive.set(s.glow);matHumanBody.emissiveIntensity=legendary?.34:.22;matHumanBody.map=tex;matHumanBody.roughness=s.id==='robot'?.30:.48;matHumanBody.metalness=(s.id==='robot'||s.id==='gold')?.45:.06;matHumanBody.needsUpdate=true;
-  matHuman.color.set(s.accent);matHuman.emissive.set(s.glow);matHuman.emissiveIntensity=legendary?.28:.18;matHuman.map=tex;matHuman.roughness=s.id==='robot'?.30:.50;matHuman.metalness=(s.id==='robot'||s.id==='gold')?.35:.04;matHuman.needsUpdate=true;
+  const metal=s.id==='robot'||s.id==='gold'||s.id==='mecha_gold'||s.fx==='cyber'||s.fx==='omega';
+  matHumanBody.color.set(s.body);matHumanBody.emissive.set(s.glow);matHumanBody.emissiveIntensity=legendary?.34:.22;matHumanBody.map=tex;matHumanBody.roughness=metal?.30:.48;matHumanBody.metalness=metal?.45:.06;matHumanBody.needsUpdate=true;
+  matHuman.color.set(s.accent);matHuman.emissive.set(s.glow);matHuman.emissiveIntensity=legendary?.28:.18;matHuman.map=tex;matHuman.roughness=metal?.30:.50;matHuman.metalness=metal?.35:.04;matHuman.needsUpdate=true;
   matHumanSkin.color.set(s.skin);matHumanSkin.emissive.set(s.glow);matHumanSkin.emissiveIntensity=s.id==='galaxy'||s.id==='shadow'?.08:.03;matHumanSkin.needsUpdate=true;
   matShoe.color.set(s.shoe);matShoe.emissive.set(s.glow);matShoe.emissiveIntensity=.10;matShoe.needsUpdate=true;
   matBelt.color.set(rarityColor(s.rarity));matBelt.needsUpdate=true;
@@ -4744,8 +4917,8 @@ const LeaderFX={
     this.accentM.color.set(s.accent);this.accentM.emissive.set(fxColor);this.accentM.emissiveIntensity=.44*pow*(.75+headMul*.25);this.accentM.needsUpdate=true;
     this.skinM.color.set(s.skin);this.skinM.emissive.set(fxColor);this.skinM.emissiveIntensity=.12*pow;this.skinM.needsUpdate=true;
     this.shoeM.color.set(s.shoe);this.shoeM.emissive.set(fxColor);this.shoeM.emissiveIntensity=.14*pow;this.shoeM.needsUpdate=true;
-    this.auraM.color.set(fxColor);this.auraM.opacity=(IS_MOBILE?.18:.25)*LEADER_AURA_POWER;this.auraM.needsUpdate=true;
-    this.haloM.color.set(fxColor);this.haloM.opacity=(IS_MOBILE?.06:.095)*LEADER_AURA_POWER;this.haloM.needsUpdate=true;
+    this.auraM.color.set(s.glow);this.auraM.opacity=(IS_MOBILE?.18:.25)*LEADER_AURA_POWER;this.auraM.needsUpdate=true;
+    this.haloM.color.set(s.glow);this.haloM.opacity=(IS_MOBILE?.06:.095)*LEADER_AURA_POWER;this.haloM.needsUpdate=true;
     this.flameCapM.color.set(fxColor);this.flameCapM.needsUpdate=true;
     this.flameMs.forEach(m=>{m.color.set(fxColor);m.needsUpdate=true;});
   },
@@ -5859,6 +6032,7 @@ function updateObstacles(cx,cz,t){
           recordFreshEvent('dodges',1);
           const dodgeCoins=activeSkinTrait().dodgeCoins||0;
           if(dodgeCoins>0){ 
+            addCoins(dodgeCoins,{source:_dodgeWarnEl||document.getElementById('hud')});
             floatTxt('DODGE +'+dodgeCoins,innerWidth*.5,innerHeight*.48,'#69F0AE',24,'streak');
           }
           rewardFlash('green');uiFeedbackPulse(hardDodge?'perfect':'good',hardDodge?520:380);
