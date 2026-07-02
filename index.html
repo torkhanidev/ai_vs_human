@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="css/40-content-missions-chest-world.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=milestones-v160">
-<link rel="stylesheet" href="css/90-late-overrides.css?v=milestones-v160">
+<link rel="stylesheet" href="css/90-late-overrides.css?v=shadow-distinct-v135">
 </head>
 <body>
 <div id="hud">
@@ -99,7 +99,7 @@
 <div class="world-unlock-popup" id="world-unlock-popup" aria-hidden="true">
   <div class="world-unlock-box">
     <div class="world-unlock-kicker">NEW PLANET UNLOCKED</div>
-    <div class="world-unlock-title" id="world-unlock-name">Frozen Moon</div>
+    <div class="world-unlock-title" id="world-unlock-name">Venus</div>
     <div class="world-unlock-level" id="world-unlock-level">LEVEL 30 ROAD</div>
     <div class="world-unlock-preview" aria-hidden="true">
       <div class="world-unlock-orb"></div>
@@ -211,7 +211,7 @@
       </div>
       <div class="space-map-unlock-box world-unlock-box" id="space-map-unlock-box" aria-hidden="true">
         <div class="world-unlock-kicker">NEW PLANET UNLOCKED</div>
-        <div class="world-unlock-title" id="space-map-unlock-name">Frozen Moon</div>
+        <div class="world-unlock-title" id="space-map-unlock-name">Venus</div>
         <div class="world-unlock-level" id="space-map-unlock-level">LEVEL 30 ROAD</div>
         <div class="world-unlock-preview" aria-hidden="true">
           <div class="world-unlock-orb"></div>
@@ -261,11 +261,24 @@
       <span><b id="resurrect-progress">0%</b><small>RUN</small></span>
       <span><b id="resurrect-peak">0</b><small>PEAK</small></span>
     </div>
+    <div class="resurrect-timer" aria-live="polite">
+      <span id="resurrect-countdown">5</span>
+      <div class="resurrect-timer-track"><div id="resurrect-count-fill"></div></div>
+      <small>DECIDE</small>
+    </div>
     <div class="resurrect-sub" id="resurrect-sub">Watch an ad to keep this run alive.</div>
     <div class="resurrect-actions">
       <button class="resurrect-watch" id="resurrect-watch-btn" type="button" onclick="claimResurrectWithAd()">WATCH AD</button>
       <button class="resurrect-skip" type="button" onclick="declineResurrectOffer()">TAKE LOSS</button>
     </div>
+  </div>
+</div>
+<div class="rewarded-ad-overlay" id="rewarded-ad-overlay" aria-hidden="true">
+  <div class="rewarded-ad-card">
+    <div class="rewarded-ad-kicker" id="rewarded-ad-kicker">REWARDED AD</div>
+    <div class="rewarded-ad-count" id="rewarded-ad-count">3</div>
+    <div class="rewarded-ad-track"><div id="rewarded-ad-fill"></div></div>
+    <div class="rewarded-ad-sub" id="rewarded-ad-sub">Stay ready.</div>
   </div>
 </div>
 <div class="skin-reveal-overlay" id="skin-reveal-overlay" aria-hidden="true">
@@ -327,6 +340,11 @@
     <div class="result-bonus-card" id="over-result-bonus" aria-hidden="true">
       <div class="result-bonus-topline" data-role="title">RUN BONUS</div>
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
+      <div class="bonus-decision-timer" data-role="decision">
+        <span data-role="decision-count">3</span>
+        <i data-role="decision-fill"></i>
+        <b>DECIDE</b>
+      </div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
         <div class="result-bonus-zone zone-xhalf"><b>x0.5</b><small>PART</small></div>
@@ -393,6 +411,11 @@
     <div class="result-bonus-card" id="win-result-bonus" aria-hidden="true">
       <div class="result-bonus-topline" data-role="title">BOSS BONUS</div>
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
+      <div class="bonus-decision-timer" data-role="decision">
+        <span data-role="decision-count">3</span>
+        <i data-role="decision-fill"></i>
+        <b>DECIDE</b>
+      </div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
         <div class="result-bonus-zone zone-xhalf"><b>x0,5</b><small>PART</small></div>
@@ -489,7 +512,7 @@
 
 
 <script src="vendor/three.r128.min.js?v=r128"></script>
-<script src="js/core/game.js?v=world-map-polish-v162"></script>
-<script src="js/ui/mobile-bottom-dock.js?v=world-map-polish-v162"></script>
+<script src="js/core/game.js?v=shadow-distinct-v135"></script>
+<script src="js/ui/mobile-bottom-dock.js?v=kid-bright-sun-v131"></script>
 </body>
 </html>

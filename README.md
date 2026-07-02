@@ -98,18 +98,18 @@ Each gate has two panels (left + right). Choose one by steering into it.
 
 | ID | Name | Unlock | Road | Edge | Sky |
 |---|---|---|---|---|---|
-| `mars` | Mars Colony | 1 (default) | `#4A1B12` | `#FF6D2D` | `#150608` |
-| `ice` | Frozen Moon | 20 | `#173854` | `#B3F5FF` | `#061826` |
-| `saturn` | Saturn Rings | 40 | `#1F1A3D` | `#FFD06A` | `#09071F` |
-| `toxic` | Toxic Venus | 60 | `#183018` | `#AEEA00` | `#071A08` |
-| `cyber` | Cyber Planet | 80 | `#101D4C` | `#EA80FC` | `#05051F` |
-| `void` | Galaxy Void | 100 | `#130B2E` | `#FFD740` | `#060006` |
-| `neon_tokyo` | Neon Tokyo | 120 | `#2A174A` | `#00E5FF` | `#040820` |
-| `lava_core` | Lava Core | 140 | `#3D0000` | `#FF6D00` | `#1A0000` |
-| `ocean_abyss` | Ocean Abyss | 160 | `#003D4D` | `#00BCD4` | `#000A14` |
-| `crystal_realm` | Crystal Realm | 180 | `#32205C` | `#EA80FC` | `#0D001F` |
-| `digital_void` | Digital Void | 200 | `#001F2E` | `#00E5FF` | `#000000` |
-| `cosmic_storm` | Cosmic Storm | 220 | `#1A0050` | `#FFD740` | `#08001A` |
+| `mars` | Mercury | 1 (default) | `#243A55` | `#D8E6FF` | `#071327` |
+| `ice` | Venus | 20 | `#4A2E00` | `#FFC928` | `#241500` |
+| `saturn` | Earth | 40 | `#073F35` | `#18A0FF` | `#041F34` |
+| `toxic` | Mars | 60 | `#5A1B0C` | `#FF5B2E` | `#1F0704` |
+| `cyber` | Jupiter | 80 | `#4A2A12` | `#FF9F3D` | `#180D04` |
+| `void` | Saturn | 100 | `#26204A` | `#FFE066` | `#09071F` |
+| `neon_tokyo` | Uranus | 120 | `#0D4A56` | `#45F4FF` | `#031A22` |
+| `lava_core` | Neptune | 140 | `#0C1C68` | `#315CFF` | `#020817` |
+| `ocean_abyss` | Pluto | 160 | `#321B50` | `#C66BFF` | `#10071C` |
+| `crystal_realm` | Ceres | 180 | `#253A60` | `#A7B8FF` | `#071021` |
+| `digital_void` | Haumea | 200 | `#3E1C33` | `#FFB3D9` | `#160713` |
+| `cosmic_storm` | Sun | 220 | `#4C2100` | `#FFD000` | `#1B0900` |
 
 Each world has unique climate particles, sky type, fog density, and visual mood. Select from the **Space Map** overlay, which shows ready/locked/selected states and the next unlock target.
 
@@ -129,7 +129,7 @@ Each world has unique climate particles, sky type, fog density, and visual mood.
 | `gold` | Gold Hero | LEGENDARY | 42,000 | `#FFD740` |
 | `toxic` | Toxic | LEGENDARY | 90,000 | `#76FF03` |
 | `galaxy` | Galaxy | MYTHIC | 220,000 | `#6A1B9A` |
-| `shadow` | Shadow | MYTHIC | 500,000 | `#101018` |
+| `shadow` | Shadow | MYTHIC | 500,000 | `#070B1F` |
 | `plasma` | Plasma Ranger | LEGENDARY | 650,000 | `#00B8D4` |
 | `samurai` | Neon Samurai | LEGENDARY | 720,000 | `#D32F2F` |
 | `angel` | Solar Angel | LEGENDARY | 800,000 | `#FFFDE7` |

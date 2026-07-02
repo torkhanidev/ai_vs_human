@@ -27,18 +27,18 @@
   };
   function spaceMapFallbackWorlds(){
     return [
-      {id:'mars',name:'Mars Colony',level:1,unlockLevel:1,color:'#FF6D2D'},
-      {id:'ice',name:'Frozen Moon',level:20,unlockLevel:20,color:'#80D8FF'},
-      {id:'saturn',name:'Saturn Rings',level:40,unlockLevel:40,color:'#FFD06A'},
-      {id:'toxic',name:'Toxic Venus',level:60,unlockLevel:60,color:'#AEEA00'},
-      {id:'cyber',name:'Cyber Planet',level:80,unlockLevel:80,color:'#EA80FC'},
-      {id:'void',name:'Galaxy Void',level:100,unlockLevel:100,color:'#FF4081'},
-      {id:'neon_tokyo',name:'Neon Tokyo',level:120,unlockLevel:120,color:'#EA80FC'},
-      {id:'lava_core',name:'Lava Core',level:140,unlockLevel:140,color:'#FF6D00'},
-      {id:'ocean_abyss',name:'Ocean Abyss',level:160,unlockLevel:160,color:'#00BCD4'},
-      {id:'crystal_realm',name:'Crystal Realm',level:180,unlockLevel:180,color:'#B388FF'},
-      {id:'digital_void',name:'Digital Void',level:200,unlockLevel:200,color:'#00E5FF'},
-      {id:'cosmic_storm',name:'Cosmic Storm',level:220,unlockLevel:220,color:'#FFD740'}
+      {id:'mars',name:'Mercury',level:1,unlockLevel:1,color:'#D8E6FF'},
+      {id:'ice',name:'Venus',level:20,unlockLevel:20,color:'#FFC928'},
+      {id:'saturn',name:'Earth',level:40,unlockLevel:40,color:'#18A0FF'},
+      {id:'toxic',name:'Mars',level:60,unlockLevel:60,color:'#FF5B2E'},
+      {id:'cyber',name:'Jupiter',level:80,unlockLevel:80,color:'#FF9F3D'},
+      {id:'void',name:'Saturn',level:100,unlockLevel:100,color:'#FFE066'},
+      {id:'neon_tokyo',name:'Uranus',level:120,unlockLevel:120,color:'#45F4FF'},
+      {id:'lava_core',name:'Neptune',level:140,unlockLevel:140,color:'#315CFF'},
+      {id:'ocean_abyss',name:'Pluto',level:160,unlockLevel:160,color:'#C66BFF'},
+      {id:'crystal_realm',name:'Ceres',level:180,unlockLevel:180,color:'#A7B8FF'},
+      {id:'digital_void',name:'Haumea',level:200,unlockLevel:200,color:'#FFB3D9'},
+      {id:'cosmic_storm',name:'Sun',level:220,unlockLevel:220,color:'#FFD000'}
     ];
   }
   function spaceMapWorlds(){
@@ -91,18 +91,18 @@
   }
   function worldMood(w){
     var id=w&&w.id;
-    if(id==='neon_tokyo')return 'Neon Rain';
-    if(id==='lava_core')return 'Lava Road';
-    if(id==='ocean_abyss')return 'Abyss Glow';
-    if(id==='crystal_realm')return 'Prism Road';
-    if(id==='digital_void')return 'Binary Rain';
-    if(id==='cosmic_storm')return 'Storm Road';
-    if(id==='ice')return 'Frost Road';
-    if(id==='saturn')return 'Ring Road';
-    if(id==='toxic')return 'Mist Road';
-    if(id==='cyber')return 'Signal Road';
-    if(id==='void')return 'Star Road';
-    return 'Dust Road';
+    if(id==='ice')return 'Cloud Orbit';
+    if(id==='saturn')return 'Blue Orbit';
+    if(id==='toxic')return 'Dust Orbit';
+    if(id==='cyber')return 'Storm Orbit';
+    if(id==='void')return 'Ring Orbit';
+    if(id==='neon_tokyo')return 'Ice Orbit';
+    if(id==='lava_core')return 'Deep Orbit';
+    if(id==='ocean_abyss')return 'Frost Orbit';
+    if(id==='crystal_realm')return 'Belt Orbit';
+    if(id==='digital_void')return 'Pearl Orbit';
+    if(id==='cosmic_storm')return 'Final Shine';
+    return 'Swift Orbit';
   }
   function worldTier(w){
     var lv=w&&Number(w.unlockLevel||w.level||1)||1;
@@ -124,6 +124,19 @@
       if(!worldUnlocked(worlds[i],level))return worlds[i];
     }
     return null;
+  }
+  function spaceMapRoutePoints(worlds){
+    var base=[
+      {x:12,y:18},{x:38,y:10},{x:66,y:18},{x:88,y:34},
+      {x:64,y:45},{x:36,y:37},{x:12,y:52},{x:34,y:68},
+      {x:62,y:60},{x:88,y:76},{x:72,y:86},{x:50,y:92}
+    ];
+    worlds=worlds||[];
+    return worlds.map(function(_,idx){
+      if(base[idx])return base[idx];
+      var t=idx*Math.PI*.62;
+      return {x:50+Math.cos(t)*Math.min(38,16+idx*2),y:52+Math.sin(t)*Math.min(34,14+idx*1.6)};
+    });
   }
   function pendingNewWorldIdSafe(){
     try{
@@ -236,7 +249,17 @@
     var lvl=document.getElementById('space-map-level');
     var readyCount=unlockedWorldCount(worlds,level);
     if(lvl)lvl.textContent='LVL '+level+' - '+readyCount+'/'+worlds.length;
-    wrap.innerHTML='';
+    var points=spaceMapRoutePoints(worlds);
+    var routeHtml='<svg class="space-route-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">';
+    for(var li=1;li<worlds.length;li++){
+      var from=points[li-1],to=points[li];
+      var lineWorld=worlds[li];
+      var lineUnlocked=worldUnlocked(lineWorld,level);
+      routeHtml+='<line class="space-route-line '+(lineUnlocked?'unlocked':'locked')+'" x1="'+from.x+'" y1="'+from.y+'" x2="'+to.x+'" y2="'+to.y+'" style="--lineColor:'+(lineWorld.color||'#00E5FF')+';--lineRgb:'+hexRgb(lineWorld.color||'#00E5FF')+'"></line>';
+    }
+    routeHtml+='</svg>';
+    wrap.classList.add('route-space');
+    wrap.innerHTML=routeHtml;
     worlds.forEach(function(w,idx){
       var unlock=w.unlockLevel||w.level||1;
       var unlocked=worldUnlocked(w,level);
@@ -252,6 +275,8 @@
       btn.style.setProperty('--planetColor',w.color||'#00E5FF');
       btn.style.setProperty('--planetRgb',hexRgb(w.color||'#00E5FF'));
       btn.style.setProperty('--planetDelay',(idx*.08)+'s');
+      btn.style.setProperty('--mapX',(points[idx]&&points[idx].x||50)+'%');
+      btn.style.setProperty('--mapY',(points[idx]&&points[idx].y||50)+'%');
       btn.dataset.worldId=w.id;
       btn.setAttribute('aria-pressed',active?'true':'false');
       btn.onclick=function(e){spaceMapPlanetTap(e,w.id);};
@@ -287,6 +312,12 @@
     }
     wrap.style.setProperty('--journeyRgb',hexRgb(world.color||'#FFD740'));
     wrap.style.setProperty('--journeyY',y+'px');
+    if(target){
+      var x=(target.style.getPropertyValue('--mapX')||'50%').replace('%','');
+      var yy=(target.style.getPropertyValue('--mapY')||'50%').replace('%','');
+      wrap.style.setProperty('--journeyX',x+'%');
+      wrap.style.setProperty('--journeyYPct',yy+'%');
+    }
     wrap.classList.remove('journey');
     void wrap.offsetWidth;
     wrap.classList.add('journey');

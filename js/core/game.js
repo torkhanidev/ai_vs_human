@@ -613,7 +613,7 @@ const SKINS=[
   {id:'gold',name:'Gold Hero',rarity:'LEGENDARY',price:42000,body:'#FFD740',accent:'#FFF59D',skin:'#FFE082',shoe:'#5D4037',glow:'#FFD740',desc:'Premium gold shine.'},
   {id:'toxic',name:'Toxic',rarity:'LEGENDARY',price:90000,body:'#76FF03',accent:'#C6FF00',skin:'#B2FF59',shoe:'#1B5E20',glow:'#76FF03',desc:'Green bubbles and danger energy.'},
   {id:'galaxy',name:'Galaxy',rarity:'MYTHIC',price:220000,body:'#6A1B9A',accent:'#00E5FF',skin:'#CE93D8',shoe:'#09001A',glow:'#EA80FC',desc:'Mythic endgame skin with stars.'},
-  {id:'shadow',name:'Shadow',rarity:'MYTHIC',price:500000,body:'#101018',accent:'#FF1744',skin:'#B0BEC5',shoe:'#000000',glow:'#FF1744',desc:'Dark elite final skin. Ultra rare.'},
+  {id:'shadow',name:'Shadow',rarity:'MYTHIC',price:500000,body:'#070B1F',accent:'#6C63FF',skin:'#C7D8FF',shoe:'#02030A',glow:'#7C4DFF',desc:'Silent violet shadow with soft night energy.'},
   {id:'plasma',name:'Plasma Ranger',rarity:'LEGENDARY',price:650000,body:'#00B8D4',accent:'#FF4FD8',skin:'#C8F7FF',shoe:'#050019',glow:'#00E5FF',fx:'plasma',desc:'Premium plasma suit with pulsing energy.'},
   {id:'samurai',name:'Neon Samurai',rarity:'LEGENDARY',price:720000,body:'#D32F2F',accent:'#FFD740',skin:'#FFE0B2',shoe:'#11050A',glow:'#FF4081',fx:'samurai',desc:'Blade-bright armor for clean boss hits.'},
   {id:'angel',name:'Solar Angel',rarity:'LEGENDARY',price:800000,body:'#FFFDE7',accent:'#FFD740',skin:'#FFE0B2',shoe:'#6D4C41',glow:'#FFF176',fx:'angel',desc:'Radiant rescue armor with soft gold wings.'},
@@ -934,100 +934,100 @@ function updateResultMilestone(kind){
 const WORLD_UNLOCK_INTERVAL=20;
 const WORLD_DEFS=[
   {
-    id:'mars',name:'Mars Colony',level:1,unlockLevel:1,color:'#FF6D2D',
-    sky:'#150608',fog:'#351008',road:'#4A1B12',edge:'#FF6D2D',dash:'#FFD27A',good:'#00FFAA',bad:'#FF3030',star:'#FFD1A0',planet:'#D95A2B',accent:'#FF8A3D',
+    id:'mars',name:'Mercury',level:1,unlockLevel:1,color:'#D8E6FF',
+    sky:'#071327',fog:'#16283A',road:'#17283E',edge:'#D8E6FF',dash:'#FFFFFF',good:'#7CFFEA',bad:'#FF5B5B',star:'#FFFFFF',planet:'#BFD7FF',accent:'#EAF4FF',
     fogDensity:.010,
-    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'dust_sky',particleType:'red_dust',backdrop:'mars_moons',roadStyle:'cracked_road',
-    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'red_dust_survival',
-    teaserMessage:'Red dust road unlocked'
+    texture:'mercury_graphite',floorTexture:'mercury_graphite',skyType:'mercury_orbit',particleType:'stardust',backdrop:'mercury_orbit',roadStyle:'mercury_road',
+    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'graphite_mercury_orbit',
+    teaserMessage:'Mercury orbit unlocked'
   },
   {
-    id:'ice',name:'Frozen Moon',level:20,unlockLevel:20,color:'#80D8FF',
-    sky:'#061826',fog:'#0B2A3C',road:'#173854',edge:'#B3F5FF',dash:'#E7FBFF',good:'#80D8FF',bad:'#FF5252',star:'#E7FBFF',planet:'#80D8FF',accent:'#B3F5FF',
-    fogDensity:.008,
-    texture:'ice_cracks',floorTexture:'ice_cracks',skyType:'frozen_moon',particleType:'snow',backdrop:'frozen_moon',roadStyle:'ice_road',
-    obstacleStyle:'ice_blocks',gateStyle:'frost_gate',enemyStyle:'ice_enemy',visualMood:'blue_frozen_silence',
-    teaserMessage:'Frozen moon road unlocked'
-  },
-  {
-    id:'saturn',name:'Saturn Rings',level:40,unlockLevel:40,color:'#FFD06A',
-    sky:'#09071F',fog:'#191437',road:'#1F1A3D',edge:'#FFD06A',dash:'#FFE6A8',good:'#FFD740',bad:'#FF5252',star:'#FFE6A8',planet:'#FFD06A',accent:'#B388FF',
-    fogDensity:.009,
-    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'saturn_rings',particleType:'ring_debris',backdrop:'saturn_rings',roadStyle:'ring_road',
-    obstacleStyle:'ring_rocks',gateStyle:'orbit_gate',enemyStyle:'saturn_enemy',visualMood:'gold_ring_orbit',
-    teaserMessage:'Saturn ring road unlocked'
-  },
-  {
-    id:'toxic',name:'Toxic Venus',level:60,unlockLevel:60,color:'#AEEA00',
-    sky:'#071A08',fog:'#143515',road:'#183018',edge:'#AEEA00',dash:'#DFFF9B',good:'#69F0AE',bad:'#FF1744',star:'#DFFF9B',planet:'#7CB342',accent:'#AEEA00',
+    id:'ice',name:'Venus',level:20,unlockLevel:20,color:'#FFC928',
+    sky:'#241500',fog:'#5C3400',road:'#4A2E00',edge:'#FFC928',dash:'#FFF176',good:'#FFE66D',bad:'#FF5B5B',star:'#FFF4B8',planet:'#FFB000',accent:'#FFF176',
     fogDensity:.014,
     texture:'acid_bubbles',floorTexture:'acid_bubbles',skyType:'toxic_venus',particleType:'acid_rain',backdrop:'toxic_venus',roadStyle:'acid_road',
-    obstacleStyle:'toxic_blocks',gateStyle:'acid_gate',enemyStyle:'toxic_enemy',visualMood:'green_acid_pressure',
-    teaserMessage:'Toxic venus road unlocked'
+    obstacleStyle:'toxic_blocks',gateStyle:'acid_gate',enemyStyle:'toxic_enemy',visualMood:'golden_venus_pressure',
+    teaserMessage:'Venus cloud route unlocked'
   },
   {
-    id:'cyber',name:'Cyber Planet',level:80,unlockLevel:80,color:'#EA80FC',
-    sky:'#05051F',fog:'#10123A',road:'#101D4C',edge:'#EA80FC',dash:'#00E5FF',good:'#00E5FF',bad:'#FF4081',star:'#EA80FC',planet:'#7C4DFF',accent:'#00E5FF',
-    fogDensity:.010,
-    texture:'neon_grid',floorTexture:'neon_grid',skyType:'cyber_grid',particleType:'glitch_rain',backdrop:'cyber_planet',roadStyle:'cyber_road',
-    obstacleStyle:'laser_blocks',gateStyle:'neon_gate',enemyStyle:'cyber_enemy',visualMood:'purple_cyber_grid',
-    teaserMessage:'Cyber planet road unlocked'
-  },
-  {
-    id:'void',name:'Galaxy Void',level:100,unlockLevel:100,color:'#FF4081',
-    sky:'#060006',fog:'#130B2E',road:'#130B2E',edge:'#FFD740',dash:'#FFF3C4',good:'#FFD740',bad:'#FF1744',star:'#FFF3C4',planet:'#4A148C',accent:'#FF4081',
-    fogDensity:.012,
-    texture:'void_stars',floorTexture:'void_stars',skyType:'galaxy_void',particleType:'cosmic_dust',backdrop:'galaxy_void',roadStyle:'void_road',
-    obstacleStyle:'void_shards',gateStyle:'star_gate',enemyStyle:'void_enemy',visualMood:'pink_gold_cosmos',
-    teaserMessage:'Galaxy void road unlocked'
-  },
-  {
-    id:'neon_tokyo',name:'Neon Tokyo',level:120,unlockLevel:120,color:'#EA80FC',
-    sky:'#040820',fog:'#150A32',road:'#2A174A',edge:'#00E5FF',dash:'#EA80FC',good:'#FF4081',bad:'#FF1744',star:'#EA80FC',planet:'#7B1FA2',accent:'#00E5FF',
-    fogDensity:.009,
-    texture:'neon_grid',floorTexture:'neon_grid',skyType:'neon_city',particleType:'pink_rain',backdrop:'neon_tokyo',roadStyle:'rain_neon_road',
-    obstacleStyle:'holo_blocks',gateStyle:'hologram_gate',enemyStyle:'cyber_enemy',visualMood:'pink_cyan_midnight',
-    teaserMessage:'Neon rain road unlocked'
-  },
-  {
-    id:'lava_core',name:'Lava Core',level:140,unlockLevel:140,color:'#FF6D00',
-    sky:'#1A0000',fog:'#3A0600',road:'#3D0000',edge:'#FF6D00',dash:'#FF8A50',good:'#FFD740',bad:'#FF1744',star:'#FF8A50',planet:'#B71C1C',accent:'#FF6D00',
-    fogDensity:.012,
-    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'volcanic_core',particleType:'ash_bubbles',backdrop:'lava_core',roadStyle:'obsidian_road',
-    obstacleStyle:'lava_rocks',gateStyle:'ember_gate',enemyStyle:'lava_enemy',visualMood:'obsidian_fire_apocalypse',
-    teaserMessage:'Lava core road unlocked'
-  },
-  {
-    id:'ocean_abyss',name:'Ocean Abyss',level:160,unlockLevel:160,color:'#00BCD4',
-    sky:'#000A14',fog:'#002B3B',road:'#003D4D',edge:'#00BCD4',dash:'#7FDBFF',good:'#00E5FF',bad:'#FF4081',star:'#7FDBFF',planet:'#006064',accent:'#00B8D4',
+    id:'saturn',name:'Earth',level:40,unlockLevel:40,color:'#18A0FF',
+    sky:'#041F34',fog:'#0A3D5F',road:'#073F35',edge:'#18A0FF',dash:'#7FDBFF',good:'#54F58B',bad:'#FF5B5B',star:'#D8F7FF',planet:'#1E88E5',accent:'#54F58B',
     fogDensity:.011,
     texture:'acid_bubbles',floorTexture:'acid_bubbles',skyType:'abyss_biolume',particleType:'bubbles_jellyfish',backdrop:'ocean_abyss',roadStyle:'abyss_road',
-    obstacleStyle:'reef_blocks',gateStyle:'biolume_gate',enemyStyle:'abyss_enemy',visualMood:'deep_blue_biolume',
-    teaserMessage:'Abyss road unlocked'
+    obstacleStyle:'reef_blocks',gateStyle:'biolume_gate',enemyStyle:'abyss_enemy',visualMood:'blue_green_earth_orbit',
+    teaserMessage:'Earth blue orbit unlocked'
   },
   {
-    id:'crystal_realm',name:'Crystal Realm',level:180,unlockLevel:180,color:'#B388FF',
-    sky:'#0D001F',fog:'#211042',road:'#32205C',edge:'#EA80FC',dash:'#B388FF',good:'#00E5FF',bad:'#FF4081',star:'#FFFFFF',planet:'#7B1FA2',accent:'#B388FF',
+    id:'toxic',name:'Mars',level:60,unlockLevel:60,color:'#FF5B2E',
+    sky:'#1F0704',fog:'#4C1308',road:'#5A1B0C',edge:'#FF5B2E',dash:'#FFB84A',good:'#FFD166',bad:'#FF1744',star:'#FFD1A0',planet:'#E74725',accent:'#FFB84A',
+    fogDensity:.010,
+    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'dust_sky',particleType:'red_dust',backdrop:'mars_moons',roadStyle:'cracked_road',
+    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'red_mars_dust',
+    teaserMessage:'Mars dust route unlocked'
+  },
+  {
+    id:'cyber',name:'Jupiter',level:80,unlockLevel:80,color:'#FF9F3D',
+    sky:'#180D04',fog:'#3E220A',road:'#4A2A12',edge:'#FF9F3D',dash:'#FFE0A6',good:'#FFD166',bad:'#FF4081',star:'#FFE6C4',planet:'#D9822B',accent:'#FFE0A6',
+    fogDensity:.009,
+    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'saturn_rings',particleType:'ring_debris',backdrop:'saturn_rings',roadStyle:'ring_road',
+    obstacleStyle:'ring_rocks',gateStyle:'orbit_gate',enemyStyle:'saturn_enemy',visualMood:'amber_jupiter_storm',
+    teaserMessage:'Jupiter storm route unlocked'
+  },
+  {
+    id:'void',name:'Saturn',level:100,unlockLevel:100,color:'#FFE066',
+    sky:'#09071F',fog:'#211C40',road:'#26204A',edge:'#FFE066',dash:'#FFF0B8',good:'#FFD740',bad:'#FF1744',star:'#FFF3C4',planet:'#FFD166',accent:'#C7A6FF',
+    fogDensity:.009,
+    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'saturn_rings',particleType:'ring_debris',backdrop:'saturn_rings',roadStyle:'ring_road',
+    obstacleStyle:'ring_rocks',gateStyle:'orbit_gate',enemyStyle:'saturn_enemy',visualMood:'premium_saturn_rings',
+    teaserMessage:'Saturn ring orbit unlocked'
+  },
+  {
+    id:'neon_tokyo',name:'Uranus',level:120,unlockLevel:120,color:'#45F4FF',
+    sky:'#031A22',fog:'#0A4050',road:'#0D4A56',edge:'#45F4FF',dash:'#D9FFFF',good:'#80F4FF',bad:'#FF1744',star:'#D9FFFF',planet:'#45F4FF',accent:'#B8FFF9',
+    fogDensity:.008,
+    texture:'ice_cracks',floorTexture:'ice_cracks',skyType:'frozen_moon',particleType:'snow',backdrop:'frozen_moon',roadStyle:'ice_road',
+    obstacleStyle:'ice_blocks',gateStyle:'frost_gate',enemyStyle:'ice_enemy',visualMood:'pale_uranus_ice',
+    teaserMessage:'Uranus ice orbit unlocked'
+  },
+  {
+    id:'lava_core',name:'Neptune',level:140,unlockLevel:140,color:'#315CFF',
+    sky:'#020817',fog:'#071A56',road:'#0C1C68',edge:'#315CFF',dash:'#8AA8FF',good:'#00E5FF',bad:'#FF1744',star:'#C8D8FF',planet:'#2446E8',accent:'#7DA2FF',
+    fogDensity:.012,
+    texture:'void_stars',floorTexture:'void_stars',skyType:'galaxy_void',particleType:'cosmic_dust',backdrop:'galaxy_void',roadStyle:'void_road',
+    obstacleStyle:'void_shards',gateStyle:'star_gate',enemyStyle:'void_enemy',visualMood:'deep_neptune_wind',
+    teaserMessage:'Neptune deep orbit unlocked'
+  },
+  {
+    id:'ocean_abyss',name:'Pluto',level:160,unlockLevel:160,color:'#C66BFF',
+    sky:'#10071C',fog:'#2A1642',road:'#321B50',edge:'#C66BFF',dash:'#F3E8FF',good:'#B388FF',bad:'#FF4081',star:'#F3E8FF',planet:'#A34DE8',accent:'#E8D5FF',
+    fogDensity:.008,
+    texture:'ice_cracks',floorTexture:'ice_cracks',skyType:'frozen_moon',particleType:'snow',backdrop:'frozen_moon',roadStyle:'ice_road',
+    obstacleStyle:'ice_blocks',gateStyle:'frost_gate',enemyStyle:'ice_enemy',visualMood:'icy_pluto_edge',
+    teaserMessage:'Pluto frost orbit unlocked'
+  },
+  {
+    id:'crystal_realm',name:'Ceres',level:180,unlockLevel:180,color:'#A7B8FF',
+    sky:'#071021',fog:'#1A2A4A',road:'#253A60',edge:'#A7B8FF',dash:'#E5ECFF',good:'#8FA3FF',bad:'#FF4081',star:'#E5ECFF',planet:'#7F95F2',accent:'#E5ECFF',
+    fogDensity:.010,
+    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'dust_sky',particleType:'red_dust',backdrop:'mars_moons',roadStyle:'cracked_road',
+    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'ceres_stone_belt',
+    teaserMessage:'Ceres belt route unlocked'
+  },
+  {
+    id:'digital_void',name:'Haumea',level:200,unlockLevel:200,color:'#FFB3D9',
+    sky:'#160713',fog:'#3A1730',road:'#3E1C33',edge:'#FFB3D9',dash:'#FFFFFF',good:'#FFB6C8',bad:'#FF1744',star:'#FFF7F2',planet:'#F59AC7',accent:'#FFFFFF',
     fogDensity:.009,
     texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'prism_sky',particleType:'crystal_shards',backdrop:'crystal_realm',roadStyle:'prism_road',
-    obstacleStyle:'crystal_shards',gateStyle:'prism_gate',enemyStyle:'crystal_enemy',visualMood:'kaleidoscope_prism',
-    teaserMessage:'Crystal realm road unlocked'
+    obstacleStyle:'crystal_shards',gateStyle:'prism_gate',enemyStyle:'crystal_enemy',visualMood:'haumea_pearl_spin',
+    teaserMessage:'Haumea pearl orbit unlocked'
   },
   {
-    id:'digital_void',name:'Digital Void',level:200,unlockLevel:200,color:'#00E5FF',
-    sky:'#000000',fog:'#00131F',road:'#001F2E',edge:'#00E5FF',dash:'#FFFFFF',good:'#FFFFFF',bad:'#FF1744',star:'#E8FFFF',planet:'#00E5FF',accent:'#00E5FF',
-    fogDensity:.010,
-    texture:'neon_grid',floorTexture:'neon_grid',skyType:'digital_void',particleType:'binary_rain',backdrop:'digital_void',roadStyle:'binary_road',
-    obstacleStyle:'laser_blocks',gateStyle:'code_gate',enemyStyle:'robot_enemy',visualMood:'binary_black_white',
-    teaserMessage:'Digital void road unlocked'
-  },
-  {
-    id:'cosmic_storm',name:'Cosmic Storm',level:220,unlockLevel:220,color:'#FFD740',
-    sky:'#08001A',fog:'#18003A',road:'#1A0050',edge:'#FFD740',dash:'#EA80FC',good:'#FFD740',bad:'#FF1744',star:'#FFF3C4',planet:'#7C4DFF',accent:'#EA80FC',
+    id:'cosmic_storm',name:'Sun',level:220,unlockLevel:220,color:'#FFD000',
+    sky:'#1B0900',fog:'#4A1D00',road:'#4C2100',edge:'#FFD000',dash:'#FFF176',good:'#FFD740',bad:'#FF1744',star:'#FFFFFF',planet:'#FFB000',accent:'#FFF176',
     fogDensity:.012,
     texture:'void_stars',floorTexture:'void_stars',skyType:'cosmic_storm',particleType:'lightning_nebula',backdrop:'cosmic_storm',roadStyle:'storm_road',
-    obstacleStyle:'void_shards',gateStyle:'storm_gate',enemyStyle:'storm_enemy',visualMood:'nebula_lightning_elite',
-    teaserMessage:'Cosmic storm road unlocked'
+    obstacleStyle:'void_shards',gateStyle:'storm_gate',enemyStyle:'storm_enemy',visualMood:'sun_finale_radiance',
+    teaserMessage:'Sun finale unlocked'
   
   }
 ];
@@ -1048,18 +1048,18 @@ const RUN_MODIFIERS=[
   {id:'flow',name:'Flow Run',short:'FLOW',desc:'More breathing room for combos',speedMul:.96,gateSpacingMul:1.08,rewardMult:1.02,accent:'#80D8FF'}
 ];
 const WORLD_TRAITS={
-  mars:{name:'Dust Rally',desc:'Rescue events start a little stronger.',comebackBoost:4,accent:'#FF8A3D'},
-  ice:{name:'Chill Road',desc:'Red gates hurt a little less.',badReduction:.06,accent:'#80D8FF'},
-  saturn:{name:'Orbit Loot',desc:'Run rewards are slightly higher.',rewardMult:1.04,accent:'#FFD06A'},
-  toxic:{name:'Acid Recovery',desc:'Comeback rescue is stronger.',comebackBoost:7,accent:'#AEEA00'},
-  cyber:{name:'Cyber Focus',desc:'Boss reflex timing is easier.',bossMiniMs:65,accent:'#EA80FC'},
-  void:{name:'Void Pull',desc:'Orbs are worth more during runs.',orbBonus:1,accent:'#FF4081'},
-  neon_tokyo:{name:'Neon Flow',desc:'More breathing room for combos.',gateSpacingMul:1.04,bossMiniMs:45,accent:'#EA80FC'},
-  lava_core:{name:'Lava Stakes',desc:'Higher reward, harsher red gates.',rewardMult:1.07,badReduction:-.04,accent:'#FF6D00'},
-  ocean_abyss:{name:'Abyss Light',desc:'Orbs pull in extra humans.',orbEvery:4,comebackBoost:4,accent:'#00E5FF'},
-  crystal_realm:{name:'Prism Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#B388FF'},
-  digital_void:{name:'Code Scanner',desc:'Risk gates appear slightly more often.',bossMiniMs:70,riskChance:.06,accent:'#00E5FF'},
-  cosmic_storm:{name:'Storm Bonus',desc:'Higher reward with a little more boss pressure.',rewardMult:1.09,bossDebt:6,accent:'#FFD740'}
+  mars:{name:'Mercury Dash',desc:'Rescue moments feel brighter and stronger.',comebackBoost:4,accent:'#D8E6FF'},
+  ice:{name:'Venus Glow',desc:'Red gates are a little gentler.',badReduction:.06,accent:'#FFC928'},
+  saturn:{name:'Earth Gift',desc:'Run rewards are slightly higher.',rewardMult:1.04,accent:'#18A0FF'},
+  toxic:{name:'Mars Rally',desc:'Comeback rescue is stronger.',comebackBoost:7,accent:'#FF5B2E'},
+  cyber:{name:'Jupiter Calm',desc:'Boss reflex timing is easier.',bossMiniMs:65,accent:'#FF9F3D'},
+  void:{name:'Saturn Pull',desc:'Orbs are worth more during runs.',orbBonus:1,accent:'#FFE066'},
+  neon_tokyo:{name:'Uranus Flow',desc:'More breathing room for combos.',gateSpacingMul:1.04,bossMiniMs:45,accent:'#45F4FF'},
+  lava_core:{name:'Neptune Boost',desc:'Bigger reward with a trickier route.',rewardMult:1.07,badReduction:-.04,accent:'#315CFF'},
+  ocean_abyss:{name:'Pluto Light',desc:'Orbs pull in extra humans.',orbEvery:4,comebackBoost:4,accent:'#C66BFF'},
+  crystal_realm:{name:'Ceres Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#A7B8FF'},
+  digital_void:{name:'Haumea Spark',desc:'Bonus gates appear slightly more often.',bossMiniMs:70,riskChance:.06,accent:'#FFB3D9'},
+  cosmic_storm:{name:'Sun Finale',desc:'A bright final reward with a brave boss challenge.',rewardMult:1.09,bossDebt:6,accent:'#FFD000'}
 };
 const SKIN_TRAITS={
   default:{name:'Balanced',desc:'No passive. Clean classic run.'},
@@ -1494,28 +1494,90 @@ const AdManager={
     try{if(Sensory.master)Sensory.master.gain.value=0.22;}catch(e){}
   }
 };
+const REWARDED_AD_SECONDS=3;
+let rewardedAdTimer=0;
+let rewardedAdEndsAt=0;
+let rewardedAdRaf=0;
+function rewardedAdContextLabel(context){
+  const ctx=String(context||'').replace(/_/g,' ').trim();
+  if(!ctx)return 'REWARDED AD';
+  if(ctx==='resurrect')return 'REVIVE AD';
+  if(ctx==='bonus boost')return 'BONUS AD';
+  if(ctx==='skin trial')return 'TRIAL AD';
+  return ctx.toUpperCase()+' AD';
+}
+function renderRewardedAdTimer(){
+  const overlay=document.getElementById('rewarded-ad-overlay');
+  if(!overlay||!rewardedAdEndsAt)return;
+  const now=performance&&performance.now?performance.now():Date.now();
+  const left=Math.max(0,rewardedAdEndsAt-now);
+  const pct=rewardedAdTimer>0?left/rewardedAdTimer:0;
+  const count=document.getElementById('rewarded-ad-count');
+  const fill=document.getElementById('rewarded-ad-fill');
+  if(count)count.textContent=String(Math.max(1,Math.ceil(left/1000)));
+  if(fill)fill.style.transform='scaleX('+Math.max(0,Math.min(1,pct))+')';
+  if(left>0){
+    rewardedAdRaf=requestAnimationFrame(renderRewardedAdTimer);
+  }
+}
+function showRewardedAdOverlay(context,seconds){
+  const overlay=document.getElementById('rewarded-ad-overlay');
+  if(!overlay)return;
+  hideRewardedAdOverlay(false);
+  const duration=Math.max(900,Math.round((seconds||REWARDED_AD_SECONDS)*1000));
+  rewardedAdTimer=duration;
+  rewardedAdEndsAt=(performance&&performance.now?performance.now():Date.now())+duration;
+  const kicker=document.getElementById('rewarded-ad-kicker');
+  const sub=document.getElementById('rewarded-ad-sub');
+  const fill=document.getElementById('rewarded-ad-fill');
+  if(kicker)kicker.textContent=rewardedAdContextLabel(context);
+  if(sub)sub.textContent='Reward in '+Math.ceil(duration/1000)+' seconds.';
+  if(fill)fill.style.transform='scaleX(1)';
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden','false');
+  renderRewardedAdTimer();
+}
+function hideRewardedAdOverlay(reset){
+  if(rewardedAdRaf){
+    cancelAnimationFrame(rewardedAdRaf);
+    rewardedAdRaf=0;
+  }
+  if(reset!==false){
+    rewardedAdTimer=0;
+    rewardedAdEndsAt=0;
+  }
+  const overlay=document.getElementById('rewarded-ad-overlay');
+  if(overlay){
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+  }
+}
 function showRewardedAd(opts){
   opts=opts||{};
   AdManager.intent=opts.context||'unknown';
   if(!AdManager.canShow()){
+    hideRewardedAdOverlay();
     if(opts.onFail)opts.onFail('frequency_limit');
     return;
   }
   const complete=()=>{
     AdManager.record();
     AdManager.restoreAudio();
+    hideRewardedAdOverlay();
     if(opts.onComplete)opts.onComplete();
   };
   const fail=(reason)=>{
     AdManager.restoreAudio();
+    hideRewardedAdOverlay();
     if(opts.onFail)opts.onFail(reason||'ad_error');
   };
   const sdk=window.CrazyGames&&window.CrazyGames.SDK;
   if(sdk&&sdk.ad&&typeof sdk.ad.requestAd==='function'){
     AdManager.muteAudio();
+    showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
     try{
       sdk.ad.requestAd('rewarded',{
-        adStarted:()=>{},
+        adStarted:()=>showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS),
         adFinished:complete,
         adError:()=>fail('ad_error')
       });
@@ -1524,7 +1586,8 @@ function showRewardedAd(opts){
   }
   if(IS_LOCAL_DEV){
     AdManager.muteAudio();
-    setTimeout(complete,900);
+    showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
+    setTimeout(complete,REWARDED_AD_SECONDS*1000);
   }else{
     fail('sdk_unavailable');
   }
@@ -3517,7 +3580,7 @@ function postGameRewardBase(reward,kind){
 }
 function hideAllPostRewardPanels(){
   document.querySelectorAll('.result-bonus-card').forEach(panel=>{
-    panel.classList.remove('show','claimed','stopped','ad-offer','ad-loading','ad-success','ad-failed','result-x2','result-x3','result-xhalf','result-x0','result-x5','result-x1','active-x2','active-x3','active-xhalf','active-x0','active-x5','active-x1');
+    panel.classList.remove('show','claimed','stopped','decision','ad-offer','ad-loading','ad-success','ad-failed','result-x2','result-x3','result-xhalf','result-x0','result-x5','result-x1','active-x2','active-x3','active-xhalf','active-x0','active-x5','active-x1');
     panel.removeAttribute('data-active-mult');
     panel.removeAttribute('data-result-mult');
     panel.removeAttribute('data-ad-mult');
@@ -3593,6 +3656,76 @@ function clearBonusCursorLoop(st){
     clearInterval(st.tickTimer);
     st.tickTimer=0;
   }
+  if(st.decisionRaf){
+    cancelAnimationFrame(st.decisionRaf);
+    st.decisionRaf=0;
+  }
+}
+function startPostRewardDecision(st){
+  if(!st)return;
+  clearBonusCursorLoop(st);
+  st.phase='decision';
+  st.running=false;
+  st.stopped=false;
+  st.decisionSeconds=3;
+  st.decisionUntil=(performance&&performance.now?performance.now():Date.now())+st.decisionSeconds*1000;
+  const panel=activePostRewardPanel(st.kind);
+  if(panel){
+    panel.classList.add('decision');
+    const finalEl=postRewardRole(panel,'final');
+    const action=postRewardRole(panel,'action');
+    const small=postRewardClaimSmall(panel);
+    if(finalEl)finalEl.textContent='3';
+    if(action)action.textContent='TAP TO START';
+    if(small)small.textContent='3 SEC READ';
+  }
+  const tick=()=>{
+    if(!postGameRewardState||postGameRewardState!==st||st.phase!=='decision')return;
+    const p=activePostRewardPanel(st.kind);
+    const now=performance&&performance.now?performance.now():Date.now();
+    const left=Math.max(0,st.decisionUntil-now);
+    const pct=left/(st.decisionSeconds*1000);
+    if(p){
+      const count=postRewardRole(p,'decision-count');
+      const fill=postRewardRole(p,'decision-fill');
+      const finalEl=postRewardRole(p,'final');
+      const next=String(Math.max(1,Math.ceil(left/1000)));
+      if(count)count.textContent=next;
+      if(finalEl)finalEl.textContent=next;
+      if(fill)fill.style.transform='scaleX('+Math.max(0,Math.min(1,pct))+')';
+    }
+    if(left<=0){
+      finishPostRewardDecision(st,false);
+      return;
+    }
+    st.decisionRaf=requestAnimationFrame(tick);
+  };
+  tick();
+}
+function finishPostRewardDecision(st,manual){
+  if(!st||st.phase!=='decision'||st.claimed)return;
+  if(st.decisionRaf){
+    cancelAnimationFrame(st.decisionRaf);
+    st.decisionRaf=0;
+  }
+  const panel=activePostRewardPanel(st.kind);
+  if(panel){
+    panel.classList.remove('decision');
+    const fill=postRewardRole(panel,'decision-fill');
+    const finalEl=postRewardRole(panel,'final');
+    const action=postRewardRole(panel,'action');
+    const small=postRewardClaimSmall(panel);
+    if(fill)fill.style.transform='scaleX(0)';
+    if(finalEl)finalEl.textContent='STOP';
+    if(action)action.textContent='TAP TO STOP';
+    if(small)small.textContent='STOP BONUS';
+  }
+  st.phase='running';
+  startBonusCursor(st);
+  if(manual){
+    Sensory.play('tap');
+    Haptic.pulse('light');
+  }
 }
 function renderBonusCursor(st){
   if(!st)return;
@@ -3656,7 +3789,7 @@ function showPostGameReward(kind,reward,resultSeq){
   const base=postGameRewardBase(reward,kind);
   if(base<=0)return;
   postGameRewardShownSeq=postGameRewardResultSeq;
-  postGameRewardState={open:true,claimed:false,kind,base,mult:null,normalMult:null,offerMult:0,finalCoins:0,normalCoins:0,boostedCoins:0,adLoading:false,adWatched:false,phase:'running',seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,lastFrame:0};
+  postGameRewardState={open:true,claimed:false,kind,base,mult:null,normalMult:null,offerMult:0,finalCoins:0,normalCoins:0,boostedCoins:0,adLoading:false,adWatched:false,phase:'decision',seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,decisionRaf:0,decisionUntil:0,decisionSeconds:3,lastFrame:0};
   hideAllPostRewardPanels();
   const title=postRewardRole(panel,'title');
   const baseEl=postRewardRole(panel,'base');
@@ -3665,10 +3798,10 @@ function showPostGameReward(kind,reward,resultSeq){
   const small=postRewardClaimSmall(panel);
   if(title)title.textContent=kind==='win'?'BOSS BONUS':'RUN BONUS';
   if(baseEl)baseEl.textContent=base;
-  if(finalEl)finalEl.textContent='STOP';
-  if(action)action.textContent='TAP TO STOP';
-  if(small)small.textContent='STOP BONUS';
-  panel.className='result-bonus-card show';
+  if(finalEl)finalEl.textContent='3';
+  if(action)action.textContent='TAP TO START';
+  if(small)small.textContent='3 SEC READ';
+  panel.className='result-bonus-card show decision';
   panel.style.display='flex';
   panel.style.opacity='1';
   panel.style.visibility='visible';
@@ -3682,7 +3815,7 @@ function showPostGameReward(kind,reward,resultSeq){
   if(hostPanel){
     try{ hostPanel.scrollTop = Math.max(0, panel.offsetTop - 12); }catch(e){}
   }
-  startBonusCursor(postGameRewardState);
+  startPostRewardDecision(postGameRewardState);
   const resultPanel=panel.closest('.result-panel');
   if(resultPanel && resultPanel.scrollIntoView){
     try{panel.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
@@ -3835,6 +3968,10 @@ function watchPostGameRewardAd(){
 function claimPostGameReward(mode){
   const st=postGameRewardState;
   if(!st||st.claimed||!playerData){closePostGameReward();return;}
+  if(st.phase==='decision'){
+    finishPostRewardDecision(st,true);
+    return;
+  }
   if(st.running&&!st.stopped){stopPostGameReward();return;}
   if(st.adLoading)return;
   if(mode==='ad'&&!st.adWatched){watchPostGameRewardAd();return;}
@@ -4145,7 +4282,18 @@ function makeSkinTex(s){
     ctx.fillStyle='rgba(0,0,32,.70)';ctx.fillRect(0,0,192,192);for(let i=0;i<170;i++){ctx.fillStyle=i%7?'rgba(255,255,255,.82)':'rgba(0,229,255,.92)';const r=1+Math.random()*2.4;ctx.fillRect(Math.random()*192,Math.random()*192,r,r);}
     const ng=ctx.createRadialGradient(60,60,10,96,96,140);ng.addColorStop(0,'rgba(234,128,252,.55)');ng.addColorStop(.42,'rgba(0,229,255,.20)');ng.addColorStop(1,'transparent');ctx.fillStyle=ng;ctx.fillRect(0,0,192,192);
   } else if(s.id==='shadow'){
-    ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(0,0,192,192);ctx.strokeStyle='rgba(255,23,68,.40)';ctx.lineWidth=3;for(let y=0;y<192;y+=16){ctx.beginPath();ctx.moveTo(0,y);ctx.quadraticCurveTo(96,y+24,192,y);ctx.stroke();}
+    const vg=ctx.createRadialGradient(52,44,4,96,96,150);
+    vg.addColorStop(0,'rgba(124,77,255,.48)');
+    vg.addColorStop(.34,'rgba(24,32,88,.42)');
+    vg.addColorStop(1,'rgba(0,0,0,.70)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,192,192);
+    for(let y=4;y<192;y+=22){
+      ctx.strokeStyle=y%44?'rgba(124,77,255,.34)':'rgba(128,216,255,.24)';
+      ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(44,y-22,104,y+28,192,y-4);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(199,216,255,.70)';
+    for(let i=0;i<42;i++){ctx.fillRect(Math.random()*192,Math.random()*192,1+Math.random()*1.8,1+Math.random()*1.8);}
   } else if(s.fx){
     drawSpecialSkinTex(ctx,s);
   } else {
@@ -4529,7 +4677,8 @@ function getWorldRoadTex(w){
   const key=(w&&w.id)||'default';
   if(worldRoadTexCache[key])return worldRoadTexCache[key];
   if(!w){worldRoadTexCache[key]=makeRoadTex();return worldRoadTexCache[key];}
-  worldRoadTexCache[key]=w.id==='mars'?makeMarsRoadTex():makeThemedRoadTex(w);
+  const wantsMarsRoad=(w.name||'').toLowerCase()==='mars'||w.visualMood==='red_mars_dust';
+  worldRoadTexCache[key]=wantsMarsRoad?makeMarsRoadTex():makeThemedRoadTex(w);
   return worldRoadTexCache[key];
 }
 
@@ -7331,24 +7480,24 @@ function initBossTapZone(){
   const zone=document.getElementById('boss-tap-zone');
   if(!zone||zone.dataset.ready==='1')return;
   zone.dataset.ready='1';
-  zone.addEventListener('pointerdown',e=>{
+  const onBossMiniPointerDown=e=>{
     if(!bossMiniActive)return;
-    e.preventDefault();e.stopPropagation();
     bossMiniPointer={id:e.pointerId,x:e.clientX,y:e.clientY,t:bossMiniNow(),handled:false};
     if(bossMiniPrompt&&bossMiniPrompt.type==='tap'){
       bossMiniPointer.handled=true;
       handleBossMiniInput('tap',e.clientX,e.clientY);
     }
-  },{passive:false});
-  zone.addEventListener('pointerup',e=>{
+  };
+  const onBossMiniPointerUp=e=>{
     if(!bossMiniActive||!bossMiniPointer||bossMiniPointer.id!==e.pointerId)return;
-    e.preventDefault();e.stopPropagation();
     const start=bossMiniPointer;
     bossMiniPointer=null;
     if(start.handled)return;
     handleBossMiniInput(bossMiniInputFromVector(e.clientX-start.x,e.clientY-start.y),e.clientX,e.clientY);
-  },{passive:false});
-  zone.addEventListener('pointercancel',()=>{bossMiniPointer=null;},{passive:true});
+  };
+  document.addEventListener('pointerdown',onBossMiniPointerDown,{passive:true,capture:true});
+  document.addEventListener('pointerup',onBossMiniPointerUp,{passive:true,capture:true});
+  document.addEventListener('pointercancel',()=>{bossMiniPointer=null;},{passive:true,capture:true});
   document.addEventListener('keydown',e=>{
     if(!bossMiniActive)return;
     const keyMap={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',' ':'tap',Space:'tap',Enter:'tap'};
@@ -8037,6 +8186,39 @@ function canOfferResurrect(sourceState){
   if(dist<45||dist>C.bossDist-25)return false;
   return true;
 }
+const RESURRECT_DECISION_SECONDS=5;
+let resurrectDecisionRaf=0;
+let resurrectDecisionUntil=0;
+let resurrectDecisionSeconds=RESURRECT_DECISION_SECONDS;
+function stopResurrectDecisionTimer(){
+  if(resurrectDecisionRaf){
+    cancelAnimationFrame(resurrectDecisionRaf);
+    resurrectDecisionRaf=0;
+  }
+  resurrectDecisionUntil=0;
+}
+function startResurrectDecisionTimer(seconds){
+  stopResurrectDecisionTimer();
+  resurrectDecisionSeconds=Math.max(2,Number(seconds)||RESURRECT_DECISION_SECONDS);
+  resurrectDecisionUntil=(performance&&performance.now?performance.now():Date.now())+resurrectDecisionSeconds*1000;
+  const tick=()=>{
+    if(gState!=='RESURRECT_OFFER'||!resurrectOfferState)return;
+    const now=performance&&performance.now?performance.now():Date.now();
+    const left=Math.max(0,resurrectDecisionUntil-now);
+    const pct=left/(resurrectDecisionSeconds*1000);
+    const count=document.getElementById('resurrect-countdown');
+    const fill=document.getElementById('resurrect-count-fill');
+    if(count)count.textContent=String(Math.max(1,Math.ceil(left/1000)));
+    if(fill)fill.style.transform='scaleX('+Math.max(0,Math.min(1,pct))+')';
+    if(left<=0){
+      stopResurrectDecisionTimer();
+      declineResurrectOffer(true);
+      return;
+    }
+    resurrectDecisionRaf=requestAnimationFrame(tick);
+  };
+  tick();
+}
 function setResurrectOfferVisible(show){
   const offer=document.getElementById('resurrect-offer');
   if(!offer)return;
@@ -8054,21 +8236,27 @@ function showResurrectOffer(){
   if(btn){btn.textContent='WATCH AD';btn.classList.remove('loading');btn.disabled=false;}
   gState='RESURRECT_OFFER';
   setResurrectOfferVisible(true);
+  startResurrectDecisionTimer(RESURRECT_DECISION_SECONDS);
   Sensory.play('reward');
   Haptic.pulse('reward');
 }
 function closeResurrectOffer(){
+  stopResurrectDecisionTimer();
   setResurrectOfferVisible(false);
   const btn=document.getElementById('resurrect-watch-btn');
   if(btn){btn.textContent='WATCH AD';btn.classList.remove('loading');btn.disabled=false;}
 }
-function declineResurrectOffer(){
+function declineResurrectOffer(timedOut){
   closeResurrectOffer();
   resurrectOfferState=null;
+  if(timedOut){
+    floatTxt('LOSS TAKEN',innerWidth*.5,innerHeight*.42,'#FF6B6B',36,'');
+  }
   finalizeLoss();
 }
 function claimResurrectWithAd(){
   if(!resurrectOfferState)return;
+  stopResurrectDecisionTimer();
   const btn=document.getElementById('resurrect-watch-btn');
   if(btn){btn.textContent='LOADING';btn.classList.add('loading');btn.disabled=true;}
   setText('resurrect-sub','Rewarded ad loading. Your team is standing by.');
@@ -8079,6 +8267,7 @@ function claimResurrectWithAd(){
       const b=document.getElementById('resurrect-watch-btn');
       if(b){b.textContent='TRY AGAIN';b.classList.remove('loading');b.disabled=false;}
       setText('resurrect-sub',reason==='frequency_limit'?'Ad limit reached. Take the loss for now.':'Ad not ready. Try again or take the loss.');
+      startResurrectDecisionTimer(4);
       Sensory.play('bad');Haptic.pulse('bad');
     }
   });
@@ -8663,6 +8852,19 @@ function loop(now){
   updateParticles(simDt);
   renderer.render(scene,camera);
 }
+
+function showScreenTouch(x,y,tone){
+  const p=document.createElement('span');
+  p.className='screen-touch-ripple '+(tone||'ui');
+  p.style.left=Math.max(0,Math.min(innerWidth,Number(x)||innerWidth*.5))+'px';
+  p.style.top=Math.max(0,Math.min(innerHeight,Number(y)||innerHeight*.5))+'px';
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),520);
+}
+document.addEventListener('pointerdown',e=>{
+  const tone=bossMiniActive?'boss':(gState==='RUNNING'||gState==='BOSS')?'run':'ui';
+  showScreenTouch(e.clientX,e.clientY,tone);
+},{capture:true,passive:true});
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    INPUT
