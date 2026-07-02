@@ -1006,12 +1006,12 @@ const WORLD_DEFS=[
     teaserMessage:'Pluto frost orbit unlocked'
   },
   {
-    id:'crystal_realm',name:'Ceres',level:180,unlockLevel:180,color:'#A7B8FF',
-    sky:'#071021',fog:'#1A2A4A',road:'#253A60',edge:'#A7B8FF',dash:'#E5ECFF',good:'#8FA3FF',bad:'#FF4081',star:'#E5ECFF',planet:'#7F95F2',accent:'#E5ECFF',
+    id:'crystal_realm',name:'Kepler 22b',level:180,unlockLevel:180,color:'#35F56D',
+    sky:'#061F12',fog:'#0E3A22',road:'#123B23',edge:'#35F56D',dash:'#C8FFD6',good:'#7CFF8A',bad:'#FF5B5B',star:'#D9FFE2',planet:'#2DDA63',accent:'#B9FF6A',
     fogDensity:.010,
-    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'dust_sky',particleType:'red_dust',backdrop:'mars_moons',roadStyle:'cracked_road',
-    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'ceres_stone_belt',
-    teaserMessage:'Ceres belt route unlocked'
+    texture:'green_world',floorTexture:'green_world',skyType:'green_orbit',particleType:'leaf_sparks',backdrop:'green_world',roadStyle:'green_road',
+    obstacleStyle:'rocks',gateStyle:'dust_gate',enemyStyle:'mars_enemy',visualMood:'green_world_garden',
+    teaserMessage:'Kepler 22b route unlocked'
   },
   {
     id:'digital_void',name:'Haumea',level:200,unlockLevel:200,color:'#FFB3D9',
@@ -1057,7 +1057,7 @@ const WORLD_TRAITS={
   neon_tokyo:{name:'Uranus Flow',desc:'More breathing room for combos.',gateSpacingMul:1.04,bossMiniMs:45,accent:'#45F4FF'},
   lava_core:{name:'Neptune Boost',desc:'Bigger reward with a trickier route.',rewardMult:1.07,badReduction:-.04,accent:'#315CFF'},
   ocean_abyss:{name:'Pluto Light',desc:'Orbs pull in extra humans.',orbEvery:4,comebackBoost:4,accent:'#C66BFF'},
-  crystal_realm:{name:'Ceres Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#A7B8FF'},
+  crystal_realm:{name:'Green Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#35F56D'},
   digital_void:{name:'Haumea Spark',desc:'Bonus gates appear slightly more often.',bossMiniMs:70,riskChance:.06,accent:'#FFB3D9'},
   cosmic_storm:{name:'Sun Finale',desc:'A bright final reward with a brave boss challenge.',rewardMult:1.09,bossDebt:6,accent:'#FFD000'}
 };
@@ -5994,6 +5994,7 @@ const LeaderFX={
     this.parts.footL=new THREE.Mesh(new THREE.BoxGeometry(.24,.09,.31),this.shoeM);this.parts.footR=new THREE.Mesh(new THREE.BoxGeometry(.24,.09,.31),this.shoeM);
     this.parts.eyeL=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),this.eyeM);this.parts.eyeR=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),this.eyeM);
     this.parts.mouth=new THREE.Mesh(new THREE.BoxGeometry(.17,.030,.026),this.mouthM);
+    this.parts.eyeL.visible=false;this.parts.eyeR.visible=false;this.parts.mouth.visible=false;
 
     // Ghost Rider style head flame: attached to the head, no smoke physics, no circular trail.
     const flameTex=this.makeFlameTexture();
@@ -6037,14 +6038,15 @@ const LeaderFX={
     this.currentSkinId=s.id;
     if(!this.ready||!this.bodyM)return;
     const myth=s.rarity==='LEGENDARY'||s.rarity==='MYTHIC';
+    const metal=s.id==='robot'||s.id==='gold'||s.id==='mecha_gold'||s.fx==='cyber'||s.fx==='omega';
     const ls=(window.LeaderStyle&&LeaderStyle.get)?LeaderStyle.get():{headGlow:1,aura:1,halo:1,flameOpacity:1,flameMode:'ghost',customColor:'#00e5ff'};
     const fxColor=(ls.customColor==='skin'||!ls.customColor)?s.glow:((ls.customColor&&/^#/.test(ls.customColor))?ls.customColor:s.glow);
     const pow=LEADER_FX_POWER*(myth?1.15:1);
     const headMul=Number(ls.headGlow||1);
-    this.bodyM.color.set(s.body);this.bodyM.emissive.set(fxColor);this.bodyM.emissiveIntensity=.34*pow*(.75+headMul*.25);this.bodyM.needsUpdate=true;
-    this.headM.color.set(s.body);this.headM.emissive.set(fxColor);this.headM.emissiveIntensity=.52*pow*headMul;this.headM.needsUpdate=true;
-    this.accentM.color.set(s.accent);this.accentM.emissive.set(fxColor);this.accentM.emissiveIntensity=.44*pow*(.75+headMul*.25);this.accentM.needsUpdate=true;
-    this.skinM.color.set(s.skin);this.skinM.emissive.set(fxColor);this.skinM.emissiveIntensity=.12*pow;this.skinM.needsUpdate=true;
+    this.bodyM.color.set(s.body);this.bodyM.emissive.set(fxColor);this.bodyM.emissiveIntensity=.34*pow*(.75+headMul*.25);this.bodyM.map=null;this.bodyM.roughness=metal?.30:.42;this.bodyM.metalness=metal?.42:.08;this.bodyM.needsUpdate=true;
+    this.headM.color.set(s.body);this.headM.emissive.set(fxColor);this.headM.emissiveIntensity=.52*pow*headMul;this.headM.map=null;this.headM.roughness=metal?.30:.40;this.headM.metalness=metal?.38:.06;this.headM.needsUpdate=true;
+    this.accentM.color.set(s.accent);this.accentM.emissive.set(fxColor);this.accentM.emissiveIntensity=.44*pow*(.75+headMul*.25);this.accentM.map=null;this.accentM.roughness=metal?.28:.40;this.accentM.metalness=metal?.45:.08;this.accentM.needsUpdate=true;
+    this.skinM.color.set(s.skin);this.skinM.emissive.set(fxColor);this.skinM.emissiveIntensity=.12*pow;this.skinM.map=null;this.skinM.needsUpdate=true;
     this.shoeM.color.set(s.shoe);this.shoeM.emissive.set(fxColor);this.shoeM.emissiveIntensity=.14*pow;this.shoeM.needsUpdate=true;
     this.auraM.color.set(s.glow);this.auraM.opacity=(IS_MOBILE?.18:.25)*LEADER_AURA_POWER;this.auraM.needsUpdate=true;
     this.haloM.color.set(s.glow);this.haloM.opacity=(IS_MOBILE?.06:.095)*LEADER_AURA_POWER;this.haloM.needsUpdate=true;

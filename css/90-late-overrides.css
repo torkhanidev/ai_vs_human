@@ -4080,7 +4080,7 @@ body.world-void #prog-fill{background:linear-gradient(90deg,#C7A6FF,#FFE066,#FFF
 body.world-neon_tokyo #prog-fill{background:linear-gradient(90deg,#00C8D8,#45F4FF,#D9FFFF) !important}
 body.world-lava_core #prog-fill{background:linear-gradient(90deg,#315CFF,#7DA2FF,#00E5FF) !important}
 body.world-ocean_abyss #prog-fill{background:linear-gradient(90deg,#8A36FF,#C66BFF,#F3E8FF) !important}
-body.world-crystal_realm #prog-fill{background:linear-gradient(90deg,#6D7DFF,#A7B8FF,#E5ECFF) !important}
+body.world-crystal_realm #prog-fill{background:linear-gradient(90deg,#00C853,#35F56D,#B9FF6A) !important}
 body.world-digital_void #prog-fill{background:linear-gradient(90deg,#FF6FB8,#FFB3D9,#FFFFFF) !important}
 body.world-cosmic_storm #prog-fill{background:linear-gradient(90deg,#FF7A00,#FFD000,#FFF176) !important}
 
@@ -4399,6 +4399,13 @@ body.shop-mode #s-shop{
     0 0 46px var(--skinGlow,#4FC3F7),
     0 0 18px var(--rarityColor,#FFD740),
     inset 0 0 26px rgba(255,255,255,.24) !important;
+}
+#s-shop .skin-avatar .texture-layer,
+#s-shop .big-skin .texture-layer{
+  display:none !important;
+  opacity:0 !important;
+  background:none !important;
+  animation:none !important;
 }
 #s-shop .skin-rarity-big{
   display:grid !important;

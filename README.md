@@ -107,7 +107,7 @@ Each gate has two panels (left + right). Choose one by steering into it.
 | `neon_tokyo` | Uranus | 120 | `#0D4A56` | `#45F4FF` | `#031A22` |
 | `lava_core` | Neptune | 140 | `#0C1C68` | `#315CFF` | `#020817` |
 | `ocean_abyss` | Pluto | 160 | `#321B50` | `#C66BFF` | `#10071C` |
-| `crystal_realm` | Ceres | 180 | `#253A60` | `#A7B8FF` | `#071021` |
+| `crystal_realm` | Kepler 22b | 180 | `#123B23` | `#35F56D` | `#061F12` |
 | `digital_void` | Haumea | 200 | `#3E1C33` | `#FFB3D9` | `#160713` |
 | `cosmic_storm` | Sun | 220 | `#4C2100` | `#FFD000` | `#1B0900` |
 

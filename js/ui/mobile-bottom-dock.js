@@ -36,7 +36,7 @@
       {id:'neon_tokyo',name:'Uranus',level:120,unlockLevel:120,color:'#45F4FF'},
       {id:'lava_core',name:'Neptune',level:140,unlockLevel:140,color:'#315CFF'},
       {id:'ocean_abyss',name:'Pluto',level:160,unlockLevel:160,color:'#C66BFF'},
-      {id:'crystal_realm',name:'Ceres',level:180,unlockLevel:180,color:'#A7B8FF'},
+      {id:'crystal_realm',name:'Kepler 22b',level:180,unlockLevel:180,color:'#35F56D'},
       {id:'digital_void',name:'Haumea',level:200,unlockLevel:200,color:'#FFB3D9'},
       {id:'cosmic_storm',name:'Sun',level:220,unlockLevel:220,color:'#FFD000'}
     ];
@@ -99,7 +99,7 @@
     if(id==='neon_tokyo')return 'Ice Orbit';
     if(id==='lava_core')return 'Deep Orbit';
     if(id==='ocean_abyss')return 'Frost Orbit';
-    if(id==='crystal_realm')return 'Belt Orbit';
+    if(id==='crystal_realm')return 'Green Orbit';
     if(id==='digital_void')return 'Pearl Orbit';
     if(id==='cosmic_storm')return 'Final Shine';
     return 'Swift Orbit';
