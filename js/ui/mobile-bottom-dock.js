@@ -28,11 +28,17 @@
   function spaceMapFallbackWorlds(){
     return [
       {id:'mars',name:'Mars Colony',level:1,unlockLevel:1,color:'#FF6D2D'},
-      {id:'ice',name:'Frozen Moon',level:30,unlockLevel:30,color:'#80D8FF'},
-      {id:'saturn',name:'Saturn Rings',level:60,unlockLevel:60,color:'#FFD06A'},
-      {id:'toxic',name:'Toxic Venus',level:90,unlockLevel:90,color:'#AEEA00'},
-      {id:'cyber',name:'Cyber Planet',level:120,unlockLevel:120,color:'#EA80FC'},
-      {id:'void',name:'Galaxy Void',level:150,unlockLevel:150,color:'#FF4081'}
+      {id:'ice',name:'Frozen Moon',level:20,unlockLevel:20,color:'#80D8FF'},
+      {id:'saturn',name:'Saturn Rings',level:40,unlockLevel:40,color:'#FFD06A'},
+      {id:'toxic',name:'Toxic Venus',level:60,unlockLevel:60,color:'#AEEA00'},
+      {id:'cyber',name:'Cyber Planet',level:80,unlockLevel:80,color:'#EA80FC'},
+      {id:'void',name:'Galaxy Void',level:100,unlockLevel:100,color:'#FF4081'},
+      {id:'neon_tokyo',name:'Neon Tokyo',level:120,unlockLevel:120,color:'#EA80FC'},
+      {id:'lava_core',name:'Lava Core',level:140,unlockLevel:140,color:'#FF6D00'},
+      {id:'ocean_abyss',name:'Ocean Abyss',level:160,unlockLevel:160,color:'#00BCD4'},
+      {id:'crystal_realm',name:'Crystal Realm',level:180,unlockLevel:180,color:'#B388FF'},
+      {id:'digital_void',name:'Digital Void',level:200,unlockLevel:200,color:'#00E5FF'},
+      {id:'cosmic_storm',name:'Cosmic Storm',level:220,unlockLevel:220,color:'#FFD740'}
     ];
   }
   function spaceMapWorlds(){
@@ -85,12 +91,39 @@
   }
   function worldMood(w){
     var id=w&&w.id;
-    if(id==='ice')return 'Snow Road';
-    if(id==='saturn')return 'Gold Rings';
-    if(id==='toxic')return 'Green Fog';
-    if(id==='cyber')return 'Neon City';
-    if(id==='void')return 'Galaxy Void';
+    if(id==='neon_tokyo')return 'Neon Rain';
+    if(id==='lava_core')return 'Lava Road';
+    if(id==='ocean_abyss')return 'Abyss Glow';
+    if(id==='crystal_realm')return 'Prism Road';
+    if(id==='digital_void')return 'Binary Rain';
+    if(id==='cosmic_storm')return 'Storm Road';
+    if(id==='ice')return 'Frost Road';
+    if(id==='saturn')return 'Ring Road';
+    if(id==='toxic')return 'Mist Road';
+    if(id==='cyber')return 'Signal Road';
+    if(id==='void')return 'Star Road';
     return 'Dust Road';
+  }
+  function worldTier(w){
+    var lv=w&&Number(w.unlockLevel||w.level||1)||1;
+    if(lv>=180)return 'ELITE';
+    if(lv>=120)return 'ADVANCED';
+    if(lv>=60)return 'DEEP SPACE';
+    if(lv>=20)return 'ORIGINAL';
+    return 'START';
+  }
+  function unlockedWorldCount(worlds,level){
+    var count=0;
+    for(var i=0;i<worlds.length;i++){
+      if(worldUnlocked(worlds[i],level))count++;
+    }
+    return count;
+  }
+  function nextLockedWorld(worlds,level){
+    for(var i=0;i<worlds.length;i++){
+      if(!worldUnlocked(worlds[i],level))return worlds[i];
+    }
+    return null;
   }
   function pendingNewWorldIdSafe(){
     try{
@@ -119,7 +152,7 @@
   }
   function setMapCaption(text){
     var cap=document.getElementById('space-map-caption');
-    if(cap)cap.textContent=text||'Planets unlock every 30 levels.';
+    if(cap)cap.textContent=text||'Planets unlock every 20 levels.';
   }
   function hideSpaceMapUnlockBox(){
     var box=document.getElementById('space-map-unlock-box');
@@ -201,7 +234,8 @@
     var newId=spaceMapNewId||pendingNewWorldIdSafe();
     if(!spaceMapFocusId||!worldById(spaceMapFocusId,worlds))spaceMapFocusId=activeId;
     var lvl=document.getElementById('space-map-level');
-    if(lvl)lvl.textContent='LVL '+level;
+    var readyCount=unlockedWorldCount(worlds,level);
+    if(lvl)lvl.textContent='LVL '+level+' - '+readyCount+'/'+worlds.length;
     wrap.innerHTML='';
     worlds.forEach(function(w,idx){
       var unlock=w.unlockLevel||w.level||1;
@@ -210,7 +244,8 @@
       var isNew=unlocked&&w.id===newId&&!active;
       var focused=w.id===spaceMapFocusId;
       var pulse=w.id===spaceMapPulseId;
-      var status=unlocked?(isNew?'NEW':(active?'SELECTED':'READY')):('LVL '+unlock);
+      var missing=Math.max(0,unlock-level);
+      var status=unlocked?(isNew?'NEW':(active?'SELECTED':'READY')):(missing+' LVL');
       var btn=document.createElement('button');
       btn.type='button';
       btn.className='space-planet space-route-'+idx+' '+(unlocked?'unlocked':'locked')+(active?' active':'')+(isNew?' new':'')+(focused?' focused':'')+(pulse?' pulse':'')+(pulse&&spaceMapPulseType==='denied'?' denied':'');
@@ -227,13 +262,14 @@
         '</span>'+
         '<span class="space-planet-copy">'+
           '<b>'+escText(w.name||w.id)+'</b>'+
-          '<span>'+(unlocked?(isNew?'New theme unlocked':(active?'Gameplay theme active':'Tap to choose theme')):'Locked planet')+'</span>'+
+          '<span>'+(unlocked?(isNew?'New theme unlocked':(active?'Gameplay theme active':worldTier(w)+' - '+worldMood(w))):('Unlocks at level '+unlock))+'</span>'+
         '</span>'+
         '<span class="space-planet-badge">'+status+'</span>';
       wrap.appendChild(btn);
     });
     renderSpaceMapPreview(worldById(spaceMapFocusId,worlds),activeId,newId);
-    setMapCaption('Choose an unlocked planet to change the gameplay theme.');
+    var next=nextLockedWorld(worlds,level);
+    setMapCaption(next?('Worlds '+readyCount+'/'+worlds.length+' ready. Next: '+next.name+' at level '+(next.unlockLevel||next.level)+'.'):('All '+worlds.length+' worlds are ready. Choose any planet theme.'));
     if(spaceMapPulseId){
       clearTimeout(renderSpaceMap._pulseTimer);
       renderSpaceMap._pulseTimer=setTimeout(function(){spaceMapPulseId=null;spaceMapPulseType='';},520);
@@ -306,7 +342,9 @@
       clearNewWorldNoticeSafe(spaceMapNewId);
     }else{
       hideSpaceMapUnlockBox();
-      setMapCaption('Choose an unlocked planet to change the gameplay theme.');
+      var readyCount=unlockedWorldCount(worlds,spaceMapLevel());
+      var next=nextLockedWorld(worlds,spaceMapLevel());
+      setMapCaption(next?('Worlds '+readyCount+'/'+worlds.length+' ready. Next: '+next.name+' at level '+(next.unlockLevel||next.level)+'.'):('All '+worlds.length+' worlds are ready. Choose any planet theme.'));
     }
     try{if(typeof Sensory!=='undefined'&&Sensory.play)Sensory.play('start');}catch(err){}
   };

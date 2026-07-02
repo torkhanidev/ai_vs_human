@@ -368,9 +368,11 @@ let inDangerZone=false,dangerPeak=0,dangerPulseTimer=0,comebackCoinsThisRun=0;
 let gameTimeScale=1,gameTimeScaleTimer=0,armyModeActive=false;
 let maxComboThisRun=0,lastComboBonusCoins=0,lastBaseRunReward=0;
 let lastGoalReward=0,lastGoalCompleted=false,lastGoalTitle='',lastGoalProgressText='';
+let lastMilestoneBonus=0,lastMilestoneTitle='',lastMilestoneCount=0,lastMilestoneBest=0;
 let lastFailReason='',lastFailFix='';
 let lastWorldUnlocked=false,lastWorldName='',lastWorldUnlockBonus=0,lastWorldUnlockId='',currentThemeId='';
 let activeRunModifier=null,activeMicroGoals=[],runStats=null,freshnessBonusCoinsThisRun=0,riskDebtThisRun=0,runPacingBeat=0,comebackUsed=false,lastFreshnessResultText='';
+let resurrectUsedThisRun=false,resurrectOfferState=null,resurrectOfferSeq=0;
 let shakeAmt=0,shakeDur=0;
 let gates_=[],laneTiles=[],particles_=[],orbs_=[];
 let obstacles_=[];
@@ -392,7 +394,7 @@ let bossSparkLast=0;
 // V100 Boss Reflex Mini-Game: UI prompts during the slow-motion clash.
 let bossTapEnabled=false,bossMiniActive=false,bossMiniFinished=false,bossMiniStarted=0,bossMiniEndsAt=0,bossMiniNextAt=0;
 let bossMiniPrompt=null,bossMiniPromptStarted=0,bossMiniCombo=0,bossMiniPerfectStreak=0,bossMiniMisses=0,bossMiniDamage=0,bossMiniSeq=0,bossMiniPointer=null,bossMiniFeedbackSeq=0,bossMiniLastPromptType='';
-let m50=false,m100=false,m200=false,m500=false;
+let runMilestoneHits={};
 let iHead,iBody,iArmL,iArmR,iLegL,iLegR,iEyeL,iEyeR,iFootL,iFootR,iBelt;
 let rHead,rBody,rArm,rLeg,rAnt,rGlow,rEyeL,rEyeR,rCore,rShoulderL,rShoulderR;
 let winDanceStart=0,celebrationZ=0,celebrationCX=0,celebrationBurstT=0;
@@ -423,7 +425,7 @@ let runnerTrailT=0,runnerTrailSide=1,runnerTrailLastX=0;
 let _hudCrowdEl=null,_hudProgEl=null,_hudDistEl=null,_hudFloatsEl=null;
 let _dodgeWarnEl=null,_dangerEdgeEl=null;
 // HUD change-detection: only touch DOM when value actually changed
-let _lastHudCrowd=-1,_lastHudDist=-1;
+let _lastHudCrowd=-1,_lastHudDist=-1,_hudLastDistPaint=0;
 // Frame counter for sub-sampling expensive but slow-changing updates
 let _frameN=0;
 // Lazy-init flag for robot meshes (created only at boss fight start)
@@ -590,6 +592,17 @@ window.DramaFX=DramaFX;
 const SAVE_VERSION=19;
 const SAVE_KEY='last_stand_3d_meta_v19';
 const LEGACY_SAVE_KEYS=['last_stand_3d_meta_v18','last_stand_3d_meta_v17','last_stand_3d_meta_v16','last_stand_3d_meta_v15','last_stand_3d_meta_v14','last_stand_3d_meta_v13'];
+const CROWD_MILESTONE_DEFS=[
+  {id:'m25',threshold:25,title:'25 HEROES',sub:'Squad online',color:'#69F0AE',burst:0x69F0AE,bonus:80,kind:'small'},
+  {id:'m50',threshold:50,title:'50 HEROES',sub:'Resistance grows!',color:'#69F0AE',burst:0x00FFAA,bonus:120,kind:'small'},
+  {id:'m100',threshold:100,title:'100 CROWD!',sub:'THE ARMY IS FORMING',color:'#FFD740',burst:0xFFD740,bonus:220,kind:'gold'},
+  {id:'m150',threshold:150,title:'150 STRONG',sub:'Momentum locked',color:'#80D8FF',burst:0x80D8FF,bonus:300,kind:'blue'},
+  {id:'m200',threshold:200,title:'200 STRONG',sub:'UNSTOPPABLE FORCE',color:'#00E5FF',burst:0x00E5FF,bonus:420,kind:'blue'},
+  {id:'m300',threshold:300,title:'300 UNITED',sub:'The road is yours',color:'#B388FF',burst:0xB388FF,bonus:650,kind:'violet'},
+  {id:'m500',threshold:500,title:'ARMY MODE',sub:'500 UNITED - AI IS DOOMED',color:'#FF8F00',burst:0xFF8F00,bonus:1000,kind:'army'},
+  {id:'m750',threshold:750,title:'750 LEGENDS',sub:'Human wave unstoppable',color:'#FF4081',burst:0xFF4081,bonus:1600,kind:'legend'},
+  {id:'m1000',threshold:1000,title:'1000 HEROES',sub:'Last stand became a legion',color:'#FFD740',burst:0xFFD740,bonus:2500,kind:'legend'}
+];
 const START_UNITS_TABLE=[0,1,2,3,4,5,6,7,8,9,10];
 const SKINS=[
   {id:'default',name:'Default',rarity:'COMMON',price:0,body:'#1E88E5',accent:'#4FC3F7',skin:'#FFCC80',shoe:'#0B1730',glow:'#4FC3F7',desc:'Classic survivor team.'},
@@ -628,6 +641,20 @@ const MISSION_DEFS=[
   {id:'crowd80',title:'Reach 80 humans',target:80,reward:200,unit:'humans',progress:()=>Math.min(80,playerData.bestCrowd||0)}
 ];
 const NEXT_RUN_GOAL_IDS=['crowd','combo','good','win'];
+const DAILY_CHALLENGE_REWARD=400;
+const DAILY_CHALLENGE_CHEST_PROGRESS=25;
+const DAILY_CHALLENGES=[
+  {id:'daily_win',title:'Win Today',desc:'Defeat the AI Army once.',stat:'win',target:()=>1},
+  {id:'daily_good',title:'Good Route',desc:'Pick good gates in one run.',stat:'good',target:lv=>lv>=12?7:5},
+  {id:'daily_combo',title:'Combo Chain',desc:'Reach a strong combo.',stat:'combo',target:lv=>lv>=12?7:5},
+  {id:'daily_crowd',title:'Big Crowd',desc:'Reach today\'s crowd target.',stat:'crowd',target:lv=>Math.min(320,120+lv*9)},
+  {id:'daily_orbs',title:'Orb Sweep',desc:'Collect glowing orbs.',stat:'orbs',target:lv=>lv>=10?16:10},
+  {id:'daily_dodge',title:'Clean Dodges',desc:'Dodge obstacles cleanly.',stat:'dodges',target:()=>2,minLevel:2},
+  {id:'daily_bounty',title:'Bounty Gate',desc:'Take one bounty gate.',stat:'risk',target:()=>1,minLevel:4},
+  {id:'daily_rescue',title:'Last Stand',desc:'Trigger one rescue moment.',stat:'comeback',target:()=>1,minLevel:3},
+  {id:'daily_distance',title:'Reach The Clash',desc:'Reach the boss road.',stat:'distance',target:()=>100},
+  {id:'daily_perfect',title:'Clean Picks',desc:'Pick good gates and avoid bad ones.',stat:'cleanGood',target:lv=>lv>=10?5:4}
+];
 function buildNextRunGoal(id){
   const lv=playerData?Math.max(1,playerData.level||1):1;
   if(id==='crowd'){
@@ -719,7 +746,192 @@ function checkNextRunGoal(win){
   }
   return 0;
 }
-const WORLD_UNLOCK_INTERVAL=30;
+function dailyChallengeDate(ts=Date.now()){
+  if(typeof tunisLocalDate==='function')return tunisLocalDate(ts);
+  try{return new Date(ts).toLocaleDateString('en-CA');}catch(e){return new Date(ts).toISOString().slice(0,10);}
+}
+function dateSeed(date){
+  const s=String(date||dailyChallengeDate());
+  let n=0;
+  for(let i=0;i<s.length;i++)n=(n*31+s.charCodeAt(i))>>>0;
+  return n;
+}
+function availableDailyChallenges(level){
+  level=Math.max(1,Math.round(num(level || (playerData&&playerData.level) || 1,1)));
+  return DAILY_CHALLENGES.filter(c=>!c.minLevel||level>=c.minLevel);
+}
+function dailyChallengeTarget(challenge){
+  const lv=Math.max(1,Math.round(num(playerData&&playerData.level,1)));
+  return Math.max(1,Math.round(typeof challenge.target==='function'?challenge.target(lv):challenge.target||1));
+}
+function todaysDailyChallenge(date){
+  date=date||dailyChallengeDate();
+  const pool=availableDailyChallenges(playerData?playerData.level:1);
+  const challenge=pool[dateSeed(date)%pool.length]||DAILY_CHALLENGES[0];
+  return Object.assign({},challenge,{date,targetValue:dailyChallengeTarget(challenge),reward:DAILY_CHALLENGE_REWARD,chestProgress:DAILY_CHALLENGE_CHEST_PROGRESS});
+}
+function ensureDailyChallengeState(date){
+  if(!playerData||!playerData.content)return null;
+  date=date||dailyChallengeDate();
+  const challenge=todaysDailyChallenge(date);
+  const state=playerData.content.dailyChallenge=Object.assign({date:'',id:'',completed:false,claimedAt:0},playerData.content.dailyChallenge||{});
+  if(state.date!==date||state.id!==challenge.id){
+    state.date=date;
+    state.id=challenge.id;
+    state.completed=false;
+    state.claimedAt=0;
+  }
+  return {state,challenge};
+}
+function dailyChallengeProgress(challenge,win){
+  if(!challenge)return 0;
+  const stats=runStats||{};
+  if(challenge.stat==='win')return win?1:0;
+  if(challenge.stat==='good')return Math.max(0,Math.round(stats.good||goodChoices||0));
+  if(challenge.stat==='combo')return Math.max(0,Math.round(maxComboThisRun||combo||0));
+  if(challenge.stat==='crowd')return Math.max(0,Math.round(peak||crowd||0));
+  if(challenge.stat==='orbs')return Math.max(0,Math.round(stats.orbs||0));
+  if(challenge.stat==='dodges')return Math.max(0,Math.round(stats.dodges||0));
+  if(challenge.stat==='risk')return Math.max(0,Math.round(stats.risk||0));
+  if(challenge.stat==='comeback')return Math.max(0,Math.round(stats.comeback||0));
+  if(challenge.stat==='distance')return Math.max(0,Math.min(100,Math.round(runProgress01()*100)));
+  if(challenge.stat==='cleanGood')return (badChoices||0)>0?0:Math.max(0,Math.round(goodChoices||0));
+  return 0;
+}
+function renderDailyChallengeUI(){
+  const info=ensureDailyChallengeState();
+  const title=document.getElementById('daily-challenge-title');
+  const text=document.getElementById('daily-challenge-text');
+  const reward=document.getElementById('daily-challenge-reward');
+  if(!info||!title||!text)return;
+  const {state,challenge}=info;
+  const target=challenge.targetValue;
+  title.textContent=challenge.title;
+  reward&&(reward.textContent='+'+challenge.reward+' coins + chest charge');
+  if(state.completed){
+    text.textContent='Completed today. New challenge tomorrow.';
+    setBar('daily-challenge-fill',100);
+  }else{
+    text.textContent=challenge.desc+' 0/'+target;
+    setBar('daily-challenge-fill',0);
+  }
+}
+function updateResultDailyChallenge(kind){
+  const el=document.getElementById(kind+'-daily-challenge');
+  if(!el)return;
+  el.classList.toggle('daily-complete',!!lastDailyChallengeCompleted);
+  if(lastDailyChallengeCompleted){
+    el.innerHTML='<span>DAILY COMPLETE</span> <b>+'+lastDailyChallengeReward+' COINS + CHEST</b>';
+  }else{
+    el.innerHTML='<span>DAILY '+(lastDailyChallengeProgressText||'0/1')+'</span> <b>'+(lastDailyChallengeTitle||'TRY TOMORROW')+'</b>';
+  }
+}
+function checkDailyChallenge(win){
+  lastDailyChallengeCompleted=false;lastDailyChallengeReward=0;lastDailyChallengeTitle='';lastDailyChallengeProgressText='';
+  const info=ensureDailyChallengeState();
+  if(!info)return 0;
+  const {state,challenge}=info;
+  const target=challenge.targetValue;
+  const prog=Math.min(target,dailyChallengeProgress(challenge,win));
+  lastDailyChallengeTitle=challenge.title;
+  lastDailyChallengeProgressText=prog+'/'+target;
+  if(state.completed){
+    lastDailyChallengeTitle='Completed today';
+    lastDailyChallengeProgressText='DONE';
+    return 0;
+  }
+  if(prog>=target){
+    state.completed=true;
+    state.claimedAt=Date.now();
+    lastDailyChallengeCompleted=true;
+    lastDailyChallengeReward=challenge.reward;
+    addCoins(challenge.reward,{silent:true});
+    chargeSkinChestProgress(challenge.chestProgress||DAILY_CHALLENGE_CHEST_PROGRESS);
+    floatTxt('DAILY +'+challenge.reward+' COINS',innerWidth*.5,innerHeight*.25,'#FFD740',34,'spin');
+    rewardFlash('gold');shake(.36);
+    return challenge.reward;
+  }
+  return 0;
+}
+function ensureMilestoneState(){
+  if(!playerData||!playerData.content)return null;
+  const state=playerData.content.milestones=Object.assign({claimed:{},best:0,totalBonus:0},playerData.content.milestones||{});
+  state.claimed=Object.assign({},state.claimed||{});
+  state.best=Math.max(0,Math.round(num(state.best,0)));
+  state.totalBonus=Math.max(0,Math.round(num(state.totalBonus,0)));
+  return state;
+}
+function nextCrowdMilestone(){
+  const state=ensureMilestoneState();
+  if(!state)return CROWD_MILESTONE_DEFS[0];
+  return CROWD_MILESTONE_DEFS.find(def=>state.claimed[def.id]!==true)||null;
+}
+function renderCrowdMilestoneUI(){
+  const card=document.getElementById('crowd-milestone-card');
+  if(!card||!playerData)return;
+  const state=ensureMilestoneState();
+  const next=nextCrowdMilestone();
+  const title=document.getElementById('crowd-milestone-title');
+  const progress=document.getElementById('crowd-milestone-progress');
+  const reward=document.getElementById('crowd-milestone-reward');
+  const fill=document.getElementById('crowd-milestone-fill');
+  card.classList.toggle('complete',!next);
+  if(!next){
+    if(title)title.textContent='All crowd milestones claimed';
+    if(progress)progress.textContent='BEST '+Math.max(state.best,playerData.bestCrowd||0);
+    if(reward)reward.textContent='+'+shortCoinAmount(state.totalBonus)+' earned';
+    if(fill)fill.style.width='100%';
+    return;
+  }
+  const best=Math.max(state.best,playerData.bestCrowd||0);
+  const pct=Math.min(100,best/next.threshold*100);
+  if(title)title.textContent='Reach '+next.threshold+' humans';
+  if(progress)progress.textContent=Math.min(best,next.threshold)+'/'+next.threshold;
+  if(reward)reward.textContent='+'+shortCoinAmount(next.bonus)+' coins';
+  if(fill)fill.style.width=pct+'%';
+}
+function checkCrowdMilestoneRewards(){
+  lastMilestoneBonus=0;lastMilestoneTitle='';lastMilestoneCount=0;lastMilestoneBest=0;
+  const state=ensureMilestoneState();
+  if(!state)return 0;
+  const best=Math.max(0,Math.round(Math.max(peak||0,crowd||0)));
+  state.best=Math.max(state.best,best);
+  lastMilestoneBest=best;
+  const earned=[];
+  for(const def of CROWD_MILESTONE_DEFS){
+    if(best>=def.threshold&&state.claimed[def.id]!==true){
+      state.claimed[def.id]=true;
+      earned.push(def);
+    }
+  }
+  if(!earned.length)return 0;
+  const total=earned.reduce((sum,def)=>sum+Math.max(0,Math.round(def.bonus||0)),0);
+  state.totalBonus=Math.max(0,Math.round((state.totalBonus||0)+total));
+  lastMilestoneBonus=total;
+  lastMilestoneCount=earned.length;
+  lastMilestoneTitle=earned[earned.length-1].title;
+  addCoins(total,{silent:true});
+  floatTxt('MILESTONE +'+total,innerWidth*.5,innerHeight*.24,'#FFD740',36,'spin');
+  rewardFlash('gold');shake(.34);
+  return total;
+}
+function updateResultMilestone(kind){
+  const el=document.getElementById(kind+'-milestone-result');
+  if(!el)return;
+  el.classList.toggle('milestone-complete',lastMilestoneBonus>0);
+  if(lastMilestoneBonus>0){
+    el.innerHTML='<span>'+lastMilestoneTitle+'</span> <b>+'+lastMilestoneBonus+' COINS</b>';
+  }else{
+    const next=nextCrowdMilestone();
+    if(next){
+      const best=Math.max(lastMilestoneBest,playerData?playerData.bestCrowd||0:0);
+      el.innerHTML='<span>MILESTONE '+Math.min(best,next.threshold)+'/'+next.threshold+'</span> <b>NEXT +'+next.bonus+'</b>';
+    }else{
+      el.innerHTML='<span>MILESTONES COMPLETE</span> <b>ALL CLAIMED</b>';
+    }
+  }
+}
+const WORLD_UNLOCK_INTERVAL=20;
 const WORLD_DEFS=[
   {
     id:'mars',name:'Mars Colony',level:1,unlockLevel:1,color:'#FF6D2D',
@@ -730,44 +942,92 @@ const WORLD_DEFS=[
     teaserMessage:'Red dust road unlocked'
   },
   {
-    id:'ice',name:'Frozen Moon',level:30,unlockLevel:30,color:'#80D8FF',
-    sky:'#061826',fog:'#0C3352',road:'#173854',edge:'#B3F5FF',dash:'#E0F7FA',good:'#80D8FF',bad:'#FF6E7F',star:'#E7FBFF',planet:'#B3F5FF',accent:'#80D8FF',
-    fogDensity:.0085,
-    texture:'ice_cracks',floorTexture:'ice_cracks',skyType:'cold_stars',particleType:'snow_sparks',backdrop:'frozen_moon',roadStyle:'frozen_road',
-    obstacleStyle:'ice_crystals',gateStyle:'frost_gate',enemyStyle:'ice_enemy',visualMood:'cold_blue_glow',
-    teaserMessage:'Frozen road unlocked'
+    id:'ice',name:'Frozen Moon',level:20,unlockLevel:20,color:'#80D8FF',
+    sky:'#061826',fog:'#0B2A3C',road:'#173854',edge:'#B3F5FF',dash:'#E7FBFF',good:'#80D8FF',bad:'#FF5252',star:'#E7FBFF',planet:'#80D8FF',accent:'#B3F5FF',
+    fogDensity:.008,
+    texture:'ice_cracks',floorTexture:'ice_cracks',skyType:'frozen_moon',particleType:'snow',backdrop:'frozen_moon',roadStyle:'ice_road',
+    obstacleStyle:'ice_blocks',gateStyle:'frost_gate',enemyStyle:'ice_enemy',visualMood:'blue_frozen_silence',
+    teaserMessage:'Frozen moon road unlocked'
   },
   {
-    id:'saturn',name:'Saturn Rings',level:60,unlockLevel:60,color:'#FFD06A',
-    sky:'#09071F',fog:'#27143A',road:'#1F1A3D',edge:'#FFD06A',dash:'#B388FF',good:'#FFD740',bad:'#FF5252',star:'#FFF3C4',planet:'#FFD06A',accent:'#B388FF',
+    id:'saturn',name:'Saturn Rings',level:40,unlockLevel:40,color:'#FFD06A',
+    sky:'#09071F',fog:'#191437',road:'#1F1A3D',edge:'#FFD06A',dash:'#FFE6A8',good:'#FFD740',bad:'#FF5252',star:'#FFE6A8',planet:'#FFD06A',accent:'#B388FF',
     fogDensity:.009,
-    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'saturn_rings',particleType:'space_dust',backdrop:'giant_saturn',roadStyle:'ring_road',
-    obstacleStyle:'asteroids',gateStyle:'ring_gate',enemyStyle:'saturn_enemy',visualMood:'gold_purple_orbit',
-    teaserMessage:'Ring road unlocked'
+    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'saturn_rings',particleType:'ring_debris',backdrop:'saturn_rings',roadStyle:'ring_road',
+    obstacleStyle:'ring_rocks',gateStyle:'orbit_gate',enemyStyle:'saturn_enemy',visualMood:'gold_ring_orbit',
+    teaserMessage:'Saturn ring road unlocked'
   },
   {
-    id:'toxic',name:'Toxic Venus',level:90,unlockLevel:90,color:'#AEEA00',
-    sky:'#071A08',fog:'#143D13',road:'#183018',edge:'#AEEA00',dash:'#69F0AE',good:'#76FF03',bad:'#FF4081',star:'#DFFF9B',planet:'#AEEA00',accent:'#69F0AE',
-    fogDensity:.011,
-    texture:'acid_bubbles',floorTexture:'acid_bubbles',skyType:'toxic_clouds',particleType:'acid_mist',backdrop:'venus_clouds',roadStyle:'toxic_road',
-    obstacleStyle:'poison_barrels',gateStyle:'acid_gate',enemyStyle:'toxic_enemy',visualMood:'green_acid_fog',
-    teaserMessage:'Toxic road unlocked'
+    id:'toxic',name:'Toxic Venus',level:60,unlockLevel:60,color:'#AEEA00',
+    sky:'#071A08',fog:'#143515',road:'#183018',edge:'#AEEA00',dash:'#DFFF9B',good:'#69F0AE',bad:'#FF1744',star:'#DFFF9B',planet:'#7CB342',accent:'#AEEA00',
+    fogDensity:.014,
+    texture:'acid_bubbles',floorTexture:'acid_bubbles',skyType:'toxic_venus',particleType:'acid_rain',backdrop:'toxic_venus',roadStyle:'acid_road',
+    obstacleStyle:'toxic_blocks',gateStyle:'acid_gate',enemyStyle:'toxic_enemy',visualMood:'green_acid_pressure',
+    teaserMessage:'Toxic venus road unlocked'
   },
   {
-    id:'cyber',name:'Cyber Planet',level:120,unlockLevel:120,color:'#EA80FC',
-    sky:'#05051F',fog:'#160A3A',road:'#101D4C',edge:'#EA80FC',dash:'#00E5FF',good:'#00E5FF',bad:'#FF4081',star:'#F4D8FF',planet:'#EA80FC',accent:'#EA80FC',
-    fogDensity:.009,
-    texture:'neon_grid',floorTexture:'neon_grid',skyType:'digital_sky',particleType:'glitch_bits',backdrop:'cyber_city',roadStyle:'neon_grid_road',
-    obstacleStyle:'laser_blocks',gateStyle:'hologram_gate',enemyStyle:'robot_enemy',visualMood:'neon_grid_energy',
-    teaserMessage:'Neon grid road unlocked'
+    id:'cyber',name:'Cyber Planet',level:80,unlockLevel:80,color:'#EA80FC',
+    sky:'#05051F',fog:'#10123A',road:'#101D4C',edge:'#EA80FC',dash:'#00E5FF',good:'#00E5FF',bad:'#FF4081',star:'#EA80FC',planet:'#7C4DFF',accent:'#00E5FF',
+    fogDensity:.010,
+    texture:'neon_grid',floorTexture:'neon_grid',skyType:'cyber_grid',particleType:'glitch_rain',backdrop:'cyber_planet',roadStyle:'cyber_road',
+    obstacleStyle:'laser_blocks',gateStyle:'neon_gate',enemyStyle:'cyber_enemy',visualMood:'purple_cyber_grid',
+    teaserMessage:'Cyber planet road unlocked'
   },
   {
-    id:'void',name:'Galaxy Void',level:150,unlockLevel:150,color:'#FF4081',
-    sky:'#020006',fog:'#12001F',road:'#130B2E',edge:'#FFD740',dash:'#FF4081',good:'#FFD740',bad:'#D500F9',star:'#FFF3C4',planet:'#FFD740',accent:'#FF4081',
+    id:'void',name:'Galaxy Void',level:100,unlockLevel:100,color:'#FF4081',
+    sky:'#060006',fog:'#130B2E',road:'#130B2E',edge:'#FFD740',dash:'#FFF3C4',good:'#FFD740',bad:'#FF1744',star:'#FFF3C4',planet:'#4A148C',accent:'#FF4081',
     fogDensity:.012,
-    texture:'void_stars',floorTexture:'void_stars',skyType:'black_hole',particleType:'star_shards',backdrop:'galaxy_void',roadStyle:'void_road',
-    obstacleStyle:'void_shards',gateStyle:'void_gate',enemyStyle:'void_enemy',visualMood:'final_galaxy_elite',
-    teaserMessage:'Final galaxy road unlocked'
+    texture:'void_stars',floorTexture:'void_stars',skyType:'galaxy_void',particleType:'cosmic_dust',backdrop:'galaxy_void',roadStyle:'void_road',
+    obstacleStyle:'void_shards',gateStyle:'star_gate',enemyStyle:'void_enemy',visualMood:'pink_gold_cosmos',
+    teaserMessage:'Galaxy void road unlocked'
+  },
+  {
+    id:'neon_tokyo',name:'Neon Tokyo',level:120,unlockLevel:120,color:'#EA80FC',
+    sky:'#040820',fog:'#150A32',road:'#2A174A',edge:'#00E5FF',dash:'#EA80FC',good:'#FF4081',bad:'#FF1744',star:'#EA80FC',planet:'#7B1FA2',accent:'#00E5FF',
+    fogDensity:.009,
+    texture:'neon_grid',floorTexture:'neon_grid',skyType:'neon_city',particleType:'pink_rain',backdrop:'neon_tokyo',roadStyle:'rain_neon_road',
+    obstacleStyle:'holo_blocks',gateStyle:'hologram_gate',enemyStyle:'cyber_enemy',visualMood:'pink_cyan_midnight',
+    teaserMessage:'Neon rain road unlocked'
+  },
+  {
+    id:'lava_core',name:'Lava Core',level:140,unlockLevel:140,color:'#FF6D00',
+    sky:'#1A0000',fog:'#3A0600',road:'#3D0000',edge:'#FF6D00',dash:'#FF8A50',good:'#FFD740',bad:'#FF1744',star:'#FF8A50',planet:'#B71C1C',accent:'#FF6D00',
+    fogDensity:.012,
+    texture:'mars_cracks',floorTexture:'mars_cracks',skyType:'volcanic_core',particleType:'ash_bubbles',backdrop:'lava_core',roadStyle:'obsidian_road',
+    obstacleStyle:'lava_rocks',gateStyle:'ember_gate',enemyStyle:'lava_enemy',visualMood:'obsidian_fire_apocalypse',
+    teaserMessage:'Lava core road unlocked'
+  },
+  {
+    id:'ocean_abyss',name:'Ocean Abyss',level:160,unlockLevel:160,color:'#00BCD4',
+    sky:'#000A14',fog:'#002B3B',road:'#003D4D',edge:'#00BCD4',dash:'#7FDBFF',good:'#00E5FF',bad:'#FF4081',star:'#7FDBFF',planet:'#006064',accent:'#00B8D4',
+    fogDensity:.011,
+    texture:'acid_bubbles',floorTexture:'acid_bubbles',skyType:'abyss_biolume',particleType:'bubbles_jellyfish',backdrop:'ocean_abyss',roadStyle:'abyss_road',
+    obstacleStyle:'reef_blocks',gateStyle:'biolume_gate',enemyStyle:'abyss_enemy',visualMood:'deep_blue_biolume',
+    teaserMessage:'Abyss road unlocked'
+  },
+  {
+    id:'crystal_realm',name:'Crystal Realm',level:180,unlockLevel:180,color:'#B388FF',
+    sky:'#0D001F',fog:'#211042',road:'#32205C',edge:'#EA80FC',dash:'#B388FF',good:'#00E5FF',bad:'#FF4081',star:'#FFFFFF',planet:'#7B1FA2',accent:'#B388FF',
+    fogDensity:.009,
+    texture:'ring_stripes',floorTexture:'ring_stripes',skyType:'prism_sky',particleType:'crystal_shards',backdrop:'crystal_realm',roadStyle:'prism_road',
+    obstacleStyle:'crystal_shards',gateStyle:'prism_gate',enemyStyle:'crystal_enemy',visualMood:'kaleidoscope_prism',
+    teaserMessage:'Crystal realm road unlocked'
+  },
+  {
+    id:'digital_void',name:'Digital Void',level:200,unlockLevel:200,color:'#00E5FF',
+    sky:'#000000',fog:'#00131F',road:'#001F2E',edge:'#00E5FF',dash:'#FFFFFF',good:'#FFFFFF',bad:'#FF1744',star:'#E8FFFF',planet:'#00E5FF',accent:'#00E5FF',
+    fogDensity:.010,
+    texture:'neon_grid',floorTexture:'neon_grid',skyType:'digital_void',particleType:'binary_rain',backdrop:'digital_void',roadStyle:'binary_road',
+    obstacleStyle:'laser_blocks',gateStyle:'code_gate',enemyStyle:'robot_enemy',visualMood:'binary_black_white',
+    teaserMessage:'Digital void road unlocked'
+  },
+  {
+    id:'cosmic_storm',name:'Cosmic Storm',level:220,unlockLevel:220,color:'#FFD740',
+    sky:'#08001A',fog:'#18003A',road:'#1A0050',edge:'#FFD740',dash:'#EA80FC',good:'#FFD740',bad:'#FF1744',star:'#FFF3C4',planet:'#7C4DFF',accent:'#EA80FC',
+    fogDensity:.012,
+    texture:'void_stars',floorTexture:'void_stars',skyType:'cosmic_storm',particleType:'lightning_nebula',backdrop:'cosmic_storm',roadStyle:'storm_road',
+    obstacleStyle:'void_shards',gateStyle:'storm_gate',enemyStyle:'storm_enemy',visualMood:'nebula_lightning_elite',
+    teaserMessage:'Cosmic storm road unlocked'
   
   }
 ];
@@ -789,11 +1049,17 @@ const RUN_MODIFIERS=[
 ];
 const WORLD_TRAITS={
   mars:{name:'Dust Rally',desc:'Rescue events start a little stronger.',comebackBoost:4,accent:'#FF8A3D'},
-  ice:{name:'Frozen Slide',desc:'Slower road, wider reflex timing.',speedMul:.97,gateSpacingMul:1.05,bossMiniMs:70,accent:'#B3F5FF'},
-  saturn:{name:'Ring Bonus',desc:'Orb pickups occasionally add an extra human.',orbEvery:5,rewardMult:1.04,accent:'#FFD06A'},
-  toxic:{name:'Toxic Second Wind',desc:'Low-crowd recovery gives more humans.',comebackBoost:7,badReduction:.06,accent:'#AEEA00'},
-  cyber:{name:'Scanner Grid',desc:'Boss prompts stay readable for longer.',bossMiniMs:95,riskChance:.04,accent:'#00E5FF'},
-  void:{name:'Void Stakes',desc:'Higher reward with a little more boss pressure.',rewardMult:1.09,bossDebt:6,accent:'#FFD740'}
+  ice:{name:'Chill Road',desc:'Red gates hurt a little less.',badReduction:.06,accent:'#80D8FF'},
+  saturn:{name:'Orbit Loot',desc:'Run rewards are slightly higher.',rewardMult:1.04,accent:'#FFD06A'},
+  toxic:{name:'Acid Recovery',desc:'Comeback rescue is stronger.',comebackBoost:7,accent:'#AEEA00'},
+  cyber:{name:'Cyber Focus',desc:'Boss reflex timing is easier.',bossMiniMs:65,accent:'#EA80FC'},
+  void:{name:'Void Pull',desc:'Orbs are worth more during runs.',orbBonus:1,accent:'#FF4081'},
+  neon_tokyo:{name:'Neon Flow',desc:'More breathing room for combos.',gateSpacingMul:1.04,bossMiniMs:45,accent:'#EA80FC'},
+  lava_core:{name:'Lava Stakes',desc:'Higher reward, harsher red gates.',rewardMult:1.07,badReduction:-.04,accent:'#FF6D00'},
+  ocean_abyss:{name:'Abyss Light',desc:'Orbs pull in extra humans.',orbEvery:4,comebackBoost:4,accent:'#00E5FF'},
+  crystal_realm:{name:'Prism Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#B388FF'},
+  digital_void:{name:'Code Scanner',desc:'Risk gates appear slightly more often.',bossMiniMs:70,riskChance:.06,accent:'#00E5FF'},
+  cosmic_storm:{name:'Storm Bonus',desc:'Higher reward with a little more boss pressure.',rewardMult:1.09,bossDebt:6,accent:'#FFD740'}
 };
 const SKIN_TRAITS={
   default:{name:'Balanced',desc:'No passive. Clean classic run.'},
@@ -829,13 +1095,17 @@ const SKIN_TRAITS={
 let playerData=null;
 let selectedSkinId='default';
 let lastRunReward=0,lastRunWin=false,runRewardGranted=false,currentRunLevel=1;
+let lastRunStreakBefore=0,lastRunStreakAfter=0,lastRunStreakBonusCoins=0,lastRunStreakMultiplier=1,lastRunStreakBroken=false;
+let lastDailyChallengeCompleted=false,lastDailyChallengeReward=0,lastDailyChallengeTitle='',lastDailyChallengeProgressText='';
+let trialSkinId='',trialSkinActive=false,lastTrialSkinId='',lastTrialSkinName='';
+let lastSkinChestBefore=0,lastSkinChestAfter=0,lastSkinChestAdvanced=false,skinRevealOpen=false,skinRevealSeq=0;
 let matHuman=null,matHumanBody=null,matHumanSkin=null,matShoe=null,matBelt=null,skinTexCache={};
 
 function freshData(){return{
   version:SAVE_VERSION,coins:250,level:1,bestCrowd:0,
   skins:{equipped:'default',owned:['default']},
   stats:{runs:0,wins:0,totalCoins:0},
-  content:{missions:{},bossChestWins:0,daily:{lastClaimDate:'',streak:0,lastServerCheck:0,lastLocalTimestamp:0,lastLocalDate:'',lastClaimSource:''},nextRunGoal:null,unlockedWorlds:{mars:true},selectedWorld:'mars',newWorldId:null},
+  content:{missions:{},bossChestWins:0,runStreak:0,skinChest:{progress:0,pendingSkin:null,claimedAt:0,totalOpened:0},milestones:{claimed:{},best:0,totalBonus:0},daily:{lastClaimDate:'',streak:0,lastServerCheck:0,lastLocalTimestamp:0,lastLocalDate:'',lastClaimSource:''},dailyChallenge:{date:'',id:'',completed:false,claimedAt:0},nextRunGoal:null,unlockedWorlds:{mars:true},selectedWorld:'mars',newWorldId:null},
   flags:{sound:true,soundUserSet:false,haptic:true},
   meta:{createdAt:Date.now(),updatedAt:Date.now()}
 };}
@@ -984,8 +1254,7 @@ function sanitizeData(data){
   clean.stats.totalCoins=Math.max(0,Math.round(num(clean.stats.totalCoins,0)));
   clean.content=Object.assign({},base.content,data.content||{});
   clean.content.missions=Object.assign({},base.content.missions,(data.content&&data.content.missions)||{});
-  clean.content.unlockedWorlds=Object.assign({},base.content.unlockedWorlds,(data.content&&data.content.unlockedWorlds)||{});
-  clean.content.unlockedWorlds.mars=true;
+  clean.content.unlockedWorlds={mars:true};
   for(const w of WORLD_DEFS){
     if(clean.level>=(w.unlockLevel||w.level||1))clean.content.unlockedWorlds[w.id]=true;
   }
@@ -1002,6 +1271,24 @@ function sanitizeData(data){
   const newWorld=WORLD_DEFS.find(w=>w.id===newWorldId);
   clean.content.newWorldId=(newWorld&&clean.content.unlockedWorlds[newWorld.id]&&newWorld.id!==clean.content.selectedWorld)?newWorld.id:null;
   clean.content.bossChestWins=clamp(Math.round(num(clean.content.bossChestWins,0)),0,3);
+  clean.content.runStreak=Math.max(0,Math.min(999,Math.round(num(clean.content.runStreak,0))));
+  const hasSavedMilestones=!!(data.content&&data.content.milestones);
+  const rawMilestones=(data.content&&data.content.milestones)||clean.content.milestones||base.content.milestones;
+  clean.content.milestones=Object.assign({},base.content.milestones,rawMilestones||{});
+  clean.content.milestones.claimed=Object.assign({},base.content.milestones.claimed,(rawMilestones&&rawMilestones.claimed)||{});
+  clean.content.milestones.best=Math.max(0,Math.round(hasSavedMilestones?num(clean.content.milestones.best,0):num(clean.bestCrowd,0)));
+  clean.content.milestones.totalBonus=Math.max(0,Math.round(num(clean.content.milestones.totalBonus,0)));
+  for(const def of CROWD_MILESTONE_DEFS){
+    if(clean.content.milestones.claimed[def.id]!==true)delete clean.content.milestones.claimed[def.id];
+    if(clean.content.milestones.best>=def.threshold)clean.content.milestones.claimed[def.id]=true;
+  }
+  const rawSkinChest=(data.content&&data.content.skinChest)||clean.content.skinChest||base.content.skinChest;
+  clean.content.skinChest=Object.assign({},base.content.skinChest,rawSkinChest||{});
+  clean.content.skinChest.progress=clamp(Math.round(num(clean.content.skinChest.progress,0)),0,100);
+  const pendingSkin=String(clean.content.skinChest.pendingSkin||'');
+  clean.content.skinChest.pendingSkin=SKINS.some(s=>s.id===pendingSkin&&s.id!=='default')?pendingSkin:null;
+  clean.content.skinChest.claimedAt=Math.max(0,Math.round(num(clean.content.skinChest.claimedAt,0)));
+  clean.content.skinChest.totalOpened=Math.max(0,Math.round(num(clean.content.skinChest.totalOpened,0)));
   clean.content.daily=Object.assign({},base.content.daily,(data.content&&data.content.daily)||{});
   clean.content.daily.lastClaimDate=String(clean.content.daily.lastClaimDate||'');
   clean.content.daily.streak=Math.max(0,Math.round(num(clean.content.daily.streak,0)));
@@ -1009,6 +1296,11 @@ function sanitizeData(data){
   clean.content.daily.lastLocalTimestamp=Math.max(0,Math.round(num(clean.content.daily.lastLocalTimestamp,0)));
   clean.content.daily.lastLocalDate=String(clean.content.daily.lastLocalDate||'');
   clean.content.daily.lastClaimSource=String(clean.content.daily.lastClaimSource||'');
+  clean.content.dailyChallenge=Object.assign({},base.content.dailyChallenge,(data.content&&data.content.dailyChallenge)||{});
+  clean.content.dailyChallenge.date=String(clean.content.dailyChallenge.date||'');
+  clean.content.dailyChallenge.id=String(clean.content.dailyChallenge.id||'');
+  clean.content.dailyChallenge.completed=clean.content.dailyChallenge.completed===true;
+  clean.content.dailyChallenge.claimedAt=Math.max(0,Math.round(num(clean.content.dailyChallenge.claimedAt,0)));
   const rawGoal=(data.content&&data.content.nextRunGoal)||clean.content.nextRunGoal||null;
   if(rawGoal&&typeof rawGoal==='object'&&['crowd','combo','good','win'].includes(rawGoal.id)){
     clean.content.nextRunGoal={id:rawGoal.id,target:Math.max(1,Math.round(num(rawGoal.target,1))),reward:Math.max(50,Math.round(num(rawGoal.reward,150)))};
@@ -1060,11 +1352,28 @@ function resetMetaProgress(){
   playerData=freshData();selectedSkinId='default';saveGame();applyEquippedSkin();refreshMetaUI();
 }
 
+function coinFxLayer(){
+  let layer=document.getElementById('coin-fx-layer');
+  if(layer)return layer;
+  layer=document.createElement('div');
+  layer.id='coin-fx-layer';
+  layer.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:260;overflow:hidden';
+  document.body.appendChild(layer);
+  return layer;
+}
+function appendCoinFxNode(node){
+  const layer=coinFxLayer();
+  layer.appendChild(node);
+  if(layer.children.length>80){
+    Array.from(layer.children).slice(0,40).forEach(el=>el.remove());
+  }
+}
+
 /* V48 UNIVERSAL COIN FLOW â€” gain: source â†’ wallet, spend: wallet â†’ clicked thing */
 const CoinFX={
   lastClickEl:null,
   lastClickAt:0,
-  clickSelectors:'.skin-card,.shop-action,.content-btn,.dev-tools-btn,.daily-card,.chest-card,.result-coins,.result-goal,.result-combo,.result-close-hook,.result-chest,.result-wallet,.meta-pill,.side-btn,.shop-tab,.next-run-goal-card',
+  clickSelectors:'.skin-card,.shop-action,.content-btn,.dev-tools-btn,.daily-card,.chest-card,.result-coins,.result-goal,.result-daily-challenge,.result-combo,.result-close-hook,.result-chest,.result-wallet,.meta-pill,.side-btn,.shop-tab,.next-run-goal-card',
   remember(el){
     if(!el)return;
     this.lastClickEl=el;
@@ -1129,7 +1438,7 @@ const CoinFX={
       c.style.transform='translate(-50%,-50%) scale('+(opts.spend?'.88':'1')+')';
       c.style.transition='transform '+duration+'ms cubic-bezier(.18,.82,.22,1), opacity '+duration+'ms ease-out';
       c.style.transitionDelay=(i*(opts.spend?24:34))+'ms';
-      document.body.appendChild(c);
+      appendCoinFxNode(c);
       const dx=to.x-sx,dy=to.y-sy;
       requestAnimationFrame(()=>{
         c.style.transform='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px)) scale('+(opts.spend?'.42':'.36')+')';
@@ -1157,6 +1466,71 @@ document.addEventListener('pointerdown',e=>{
   const el=e.target&&e.target.closest?e.target.closest(CoinFX.clickSelectors):null;
   if(el)CoinFX.remember(el);
 },{capture:true,passive:true});
+
+const IS_LOCAL_DEV = location.hostname==='localhost' || location.hostname==='127.0.0.1' || location.search.includes('devmode=true');
+const AdManager={
+  watchedThisSession:0,
+  lastAdTime:0,
+  intent:'',
+  MAX_ADS_PER_SESSION:5,
+  MIN_GAP_BETWEEN_ADS:60000,
+  canShow(){
+    const now=Date.now();
+    return this.watchedThisSession<this.MAX_ADS_PER_SESSION && (now-this.lastAdTime)>this.MIN_GAP_BETWEEN_ADS;
+  },
+  record(){
+    this.watchedThisSession++;
+    this.lastAdTime=Date.now();
+  },
+  muted:false,
+  muteAudio(){
+    if(this.muted)return;
+    this.muted=true;
+    try{if(Sensory.master)Sensory.master.gain.value=0.0001;}catch(e){}
+  },
+  restoreAudio(){
+    if(!this.muted)return;
+    this.muted=false;
+    try{if(Sensory.master)Sensory.master.gain.value=0.22;}catch(e){}
+  }
+};
+function showRewardedAd(opts){
+  opts=opts||{};
+  AdManager.intent=opts.context||'unknown';
+  if(!AdManager.canShow()){
+    if(opts.onFail)opts.onFail('frequency_limit');
+    return;
+  }
+  const complete=()=>{
+    AdManager.record();
+    AdManager.restoreAudio();
+    if(opts.onComplete)opts.onComplete();
+  };
+  const fail=(reason)=>{
+    AdManager.restoreAudio();
+    if(opts.onFail)opts.onFail(reason||'ad_error');
+  };
+  const sdk=window.CrazyGames&&window.CrazyGames.SDK;
+  if(sdk&&sdk.ad&&typeof sdk.ad.requestAd==='function'){
+    AdManager.muteAudio();
+    try{
+      sdk.ad.requestAd('rewarded',{
+        adStarted:()=>{},
+        adFinished:complete,
+        adError:()=>fail('ad_error')
+      });
+    }catch(e){fail('ad_exception');}
+    return;
+  }
+  if(IS_LOCAL_DEV){
+    AdManager.muteAudio();
+    setTimeout(complete,900);
+  }else{
+    fail('sdk_unavailable');
+  }
+}
+window.AdManager=AdManager;
+window.showRewardedAd=showRewardedAd;
 
 function addCoins(amount,sourceOrOptions){
   if(!playerData)return 0;
@@ -1197,15 +1571,22 @@ function saveAndRefresh(){saveGame();refreshMetaUI();}
 
 const SaveManager={load:loadGame,save:saveGame,reset:resetMetaProgress,sanitize:sanitizeData};
 const EconomyManager={add:addCoins,spend:spendCoins,canAfford:(cost)=>!!playerData&&playerData.coins>=cost,reward:calcRunReward};
-const SkinManager={list:SKINS,byId:skinById,owns:ownsSkin,unlock:unlockSkin,equip:equipSkin,active:()=>skinById(playerData&&playerData.skins?playerData.skins.equipped:'default')};
+const SkinManager={list:SKINS,byId:skinById,owns:ownsSkin,unlock:unlockSkin,equip:equipSkin,active:()=>skinById(activeRunSkinId())};
 const MissionManager={defs:MISSION_DEFS,check:checkMissions,render:renderMissions};
 const ChestManager={progress:bossChestProgress,open:claimBossChest};
 const WorldManager={defs:WORLD_DEFS,current:currentWorldDef,next:nextWorldDef};
 const UIManager={refresh:refreshMetaUI,shop:renderShop,content:renderContentUI,popup:showChestPopup};
 function skinById(id){return SKINS.find(s=>s.id===id)||SKINS[0];}
 function ownsSkin(id){return playerData&&playerData.skins.owned.includes(id);}
+function activeRunSkinId(){
+  if(trialSkinActive&&trialSkinId){
+    const trial=skinById(trialSkinId);
+    if(trial&&trial.id===trialSkinId)return trial.id;
+  }
+  return (playerData&&playerData.skins&&playerData.skins.equipped)||'default';
+}
 function activeSkinTrait(id){
-  const key=id || (playerData&&playerData.skins&&playerData.skins.equipped) || 'default';
+  const key=id || activeRunSkinId();
   return SKIN_TRAITS[key]||SKIN_TRAITS.default;
 }
 function activeWorldTrait(w){
@@ -1288,7 +1669,7 @@ function renderFreshnessMenu(){
     rows.slice(0,5).forEach(r=>{
       const el=document.createElement('div');
       el.className='session-goal-row';
-      if(r.c)el.style.setProperty('--freshAccent',r.c);
+      if(r.c){el.style.setProperty('--freshAccent',r.c);setColorAlphaVars(el,'freshAccent',r.c,[.26,.28,.55]);}
       el.innerHTML='<b>'+r.k+'</b><span>'+r.t+'</span>';
       list.appendChild(el);
     });
@@ -1304,7 +1685,9 @@ function renderFreshnessHUD(win){
   const label=document.getElementById('fresh-mod-label');
   if(label){
     label.textContent=(mod&&mod.short?mod.short:'FRESH')+' - '+(activeWorldTrait().name||'WORLD');
-    label.style.setProperty('--freshAccent',(mod&&mod.accent)||activeWorldTrait().accent||'#00E5FF');
+    const freshAccent=(mod&&mod.accent)||activeWorldTrait().accent||'#00E5FF';
+    label.style.setProperty('--freshAccent',freshAccent);
+    setColorAlphaVars(label,'freshAccent',freshAccent,[.26,.28,.55]);
   }
   const list=document.getElementById('fresh-goals-live');
   if(list){
@@ -1502,6 +1885,54 @@ function comboBonusNameFor(maxCombo){
   if(maxCombo>=3)return 'COMBO';
   return 'BUILD COMBO';
 }
+function savedRunStreak(){
+  return Math.max(0,Math.round(num(playerData&&playerData.content?playerData.content.runStreak:0,0)));
+}
+function streakMultiplierFor(runStreak){
+  runStreak=Math.max(0,Math.round(num(runStreak,0)));
+  if(runStreak<2)return 1;
+  return Math.min(1.25,1+Math.min(5,runStreak-1)*.05);
+}
+function streakMultiplierLabel(mult){
+  return 'x'+(Math.round(num(mult,1)*100)/100).toFixed(2).replace(/\.00$/,'');
+}
+function applyRunStreakReward(win,coinsBeforeStreak){
+  lastRunStreakBefore=savedRunStreak();
+  lastRunStreakAfter=win?lastRunStreakBefore+1:0;
+  lastRunStreakBroken=!win&&lastRunStreakBefore>=3;
+  lastRunStreakMultiplier=win?streakMultiplierFor(lastRunStreakAfter):1;
+  lastRunStreakBonusCoins=win?Math.max(0,Math.round(Math.max(0,coinsBeforeStreak)*(lastRunStreakMultiplier-1))):0;
+  if(playerData&&playerData.content)playerData.content.runStreak=lastRunStreakAfter;
+  return lastRunStreakBonusCoins;
+}
+function updateRunStreakBadge(){
+  const el=document.getElementById('ui-run-streak');
+  if(!el||!playerData||!playerData.content)return;
+  const streak=savedRunStreak();
+  const count=el.querySelector('[data-role="streak-count"]');
+  const mult=el.querySelector('[data-role="streak-mult"]');
+  if(!count||!mult)return;
+  el.classList.toggle('hot',streak>=2);
+  count.textContent=String(streak);
+  mult.textContent=streak>=2?streakMultiplierLabel(streakMultiplierFor(streak)):'NEXT WIN';
+}
+function updateResultRunStreak(kind){
+  const el=document.getElementById(kind+'-run-streak');
+  if(!el)return;
+  el.classList.remove('streak-hot','streak-broken');
+  if(lastRunWin){
+    const hot=lastRunStreakAfter>=2;
+    el.classList.toggle('streak-hot',hot);
+    const main=lastRunStreakAfter+' WIN STREAK';
+    const sub=hot?streakMultiplierLabel(lastRunStreakMultiplier)+' REWARD +'+lastRunStreakBonusCoins:'WIN AGAIN TO MULTIPLY';
+    el.innerHTML='<span>'+main+'</span> <b>'+sub+'</b>';
+  }else if(lastRunStreakBroken){
+    el.classList.add('streak-broken');
+    el.innerHTML='<span>'+lastRunStreakBefore+'-WIN STREAK BROKEN</span> <b>START THE NEXT CHAIN</b>';
+  }else{
+    el.innerHTML='<span>RUN STREAK</span> <b>WIN TO START</b>';
+  }
+}
 function registerGoodCombo(){
   const oldRate=comboBonusRateFor(maxComboThisRun);
   maxComboThisRun=Math.max(maxComboThisRun,combo);
@@ -1535,6 +1966,8 @@ function resultScreenVisible(kind){
   return !!(el&&el.style.display!=='none');
 }
 function postGameRewardBlocksChest(kind){
+  const trial=document.getElementById(kind+'-trial-skin');
+  if(trial&&trial.classList.contains('show')&&trial.classList.contains('reward-show'))return true;
   return !!(postGameRewardState&&postGameRewardState.open&&!postGameRewardState.claimed&&postGameRewardState.kind===kind);
 }
 function cancelAutoBossChestOpen(){
@@ -1557,6 +1990,10 @@ function autoOpenBossChestAfterResult(kind){
         waitThenOpen(1100);
         return;
       }
+      if(skinChestBlocksResult()){
+        waitThenOpen(1300);
+        return;
+      }
       claimBossChest(true);
       autoChestOpening=false;
     },delay);
@@ -1566,12 +2003,15 @@ function autoOpenBossChestAfterResult(kind){
 function grantRunReward(win){
   if(runRewardGranted)return lastRunReward;
   runRewardGranted=true;lastRunWin=!!win;
+  resetSkinChestResultState();
   checkMicroGoals(!!win);
   lastBaseRunReward=Math.round(calcRunReward(win,crowd)*freshnessRewardMultiplier());
   const comboRate=comboBonusRateFor(maxComboThisRun);
   const fullComboBonus=Math.round(lastBaseRunReward*comboRate);
   lastComboBonusCoins=win?fullComboBonus:Math.round(fullComboBonus*.35);
-  const resultCoins=lastBaseRunReward+lastComboBonusCoins;
+  const preStreakCoins=lastBaseRunReward+lastComboBonusCoins;
+  const streakBonus=applyRunStreakReward(!!win,preStreakCoins);
+  const resultCoins=preStreakCoins+streakBonus;
   lastRunReward=resultCoins+freshnessBonusCoinsThisRun;
   addCoins(resultCoins,{silent:true});
   playerData.bestCrowd=Math.max(playerData.bestCrowd,peak,crowd);
@@ -1580,9 +2020,14 @@ function grantRunReward(win){
     playerData.stats.wins++;
     playerData.level++;
     playerData.content.bossChestWins=Math.min(3,(playerData.content.bossChestWins||0)+1);
+    advanceSkinChest(true);
   }
+  const milestoneBonus=checkCrowdMilestoneRewards();
+  if(milestoneBonus>0)lastRunReward+=milestoneBonus;
   const goalBonus=checkNextRunGoal(win);
   if(goalBonus>0)lastRunReward+=goalBonus;
+  const dailyBonus=checkDailyChallenge(win);
+  if(dailyBonus>0)lastRunReward+=dailyBonus;
   const bonus=checkMissions(true);
   if(bonus>0)lastRunReward+=bonus;
   summarizeFreshnessResult(!!win);
@@ -1727,16 +2172,30 @@ window.pendingNewWorldId=pendingNewWorldId;
 window.clearNewWorldNotice=clearNewWorldNotice;
 function hexNum(hex){return parseInt(String(hex||'#ffffff').replace('#',''),16);}
 function rgbaFromHex(hex,a){
-  const n=hexNum(hex),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  hex=String(hex||'#ffffff').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
   return 'rgba('+r+','+g+','+b+','+a+')';
 }
+function setColorAlphaVars(el,prefix,hex,alphas){
+  if(!el)return;
+  alphas.forEach(a=>{
+    const pct=Math.round(a*100);
+    el.style.setProperty('--'+prefix+'-'+pct,rgbaFromHex(hex,a));
+  });
+}
 function setBodyWorldClass(w){
-  document.body.classList.remove('world-neon','world-lava','world-mars','world-ice','world-saturn','world-toxic','world-cyber','world-void');
+  document.body.classList.remove('world-neon','world-lava','world-mars','world-ice','world-saturn','world-toxic','world-cyber','world-void','world-neon_tokyo','world-lava_core','world-ocean_abyss','world-crystal_realm','world-digital_void','world-cosmic_storm');
   document.body.classList.add('world-'+(w?w.id:'mars'));
-  document.documentElement.style.setProperty('--worldColor',w?w.color:'#00E5FF');
-  document.documentElement.style.setProperty('--worldColorSoft',rgbaFromHex(w?w.color:'#00E5FF',.24));
+  const root=document.documentElement;
+  const worldColor=w?w.color:'#00E5FF';
+  const edgeColor=w?w.edge:'#00E5FF';
+  root.style.setProperty('--worldColor',worldColor);
+  root.style.setProperty('--worldColorSoft',rgbaFromHex(worldColor,.24));
+  setColorAlphaVars(root,'worldColor',worldColor,[.24,.26,.45,.46,.52,.64,.78]);
+  setColorAlphaVars(root,'worldEdge',edgeColor,[.45]);
   document.documentElement.style.setProperty('--worldRoad',w?w.road:'#101D4C');
-  document.documentElement.style.setProperty('--worldEdge',w?w.edge:'#00E5FF');
+  document.documentElement.style.setProperty('--worldEdge',edgeColor);
   document.documentElement.style.setProperty('--worldGood',w?w.good:'#00E676');
   document.documentElement.style.setProperty('--worldBad',w?w.bad:'#FF5252');
 }
@@ -1840,6 +2299,8 @@ function updateResultWorld(kind){
   const nextColor=(lastWorldUnlocked?(cur&&cur.color):next&&next.color)||'#FFD740';
   el.style.setProperty('--worldColor',(cur&&cur.color)||'#00E5FF');
   el.style.setProperty('--nextWorldColor',nextColor);
+  setColorAlphaVars(el,'worldColor',(cur&&cur.color)||'#00E5FF',[.24,.26]);
+  setColorAlphaVars(el,'nextWorldColor',nextColor,[.25,.28,.32,.34,.42,.45,.52,.62]);
   el.classList.toggle('world-unlocked',!!lastWorldUnlocked);
   el.classList.toggle('world-max',!lastWorldUnlocked&&!next);
   if(lastWorldUnlocked){
@@ -1895,6 +2356,7 @@ function showWorldUnlockCinematic(world,bonus){
   const p=document.getElementById('world-unlock-popup');
   if(!p||!world)return;
   p.style.setProperty('--unlockColor',world.color||'#FFD740');
+  setColorAlphaVars(p,'unlockColor',world.color||'#FFD740',[.20,.22,.28,.32,.35,.38,.42,.45,.50,.62]);
   setText('world-unlock-name',world.name||'New Planet');
   setText('world-unlock-level','LEVEL '+(world.level||world.unlockLevel||'?')+' ROAD');
   setText('world-unlock-bonus',bonus>0?('PLANET BONUS +'+bonus+' COINS'):'NEW ROAD LIVE');
@@ -1910,6 +2372,260 @@ function showWorldUnlockCinematic(world,bonus){
 
 
 function bossChestProgress(){return Math.max(0,Math.min(3,(playerData&&playerData.content?playerData.content.bossChestWins:0)||0));}
+function ensureSkinChest(){
+  if(!playerData)return null;
+  playerData.content=playerData.content||{};
+  if(!playerData.content.skinChest)playerData.content.skinChest={progress:0,pendingSkin:null,claimedAt:0,totalOpened:0};
+  const chest=playerData.content.skinChest;
+  chest.progress=clamp(Math.round(num(chest.progress,0)),0,100);
+  if(chest.pendingSkin&&!SKINS.some(s=>s.id===chest.pendingSkin&&s.id!=='default'))chest.pendingSkin=null;
+  chest.claimedAt=Math.max(0,Math.round(num(chest.claimedAt,0)));
+  chest.totalOpened=Math.max(0,Math.round(num(chest.totalOpened,0)));
+  return chest;
+}
+function skinChestProgress(){
+  const chest=ensureSkinChest();
+  return chest?chest.progress:0;
+}
+function skinChestWinCount(progress){
+  return Math.max(0,Math.min(4,Math.round((progress==null?skinChestProgress():progress)/25)));
+}
+function resetSkinChestResultState(){
+  lastSkinChestBefore=skinChestProgress();
+  lastSkinChestAfter=lastSkinChestBefore;
+  lastSkinChestAdvanced=false;
+}
+function pickSkinChestReward(){
+  const unowned=SKINS.filter(s=>s.id!=='default'&&s.price>0&&!ownsSkin(s.id));
+  if(!unowned.length)return {id:'__coins__',bonus:500};
+  const weighted=unowned.map(s=>Object.assign({},
+    s,
+    {w:s.rarity==='COMMON'?8:s.rarity==='RARE'?5:s.rarity==='EPIC'?3:s.rarity==='LEGENDARY'?2:1}
+  ));
+  const total=weighted.reduce((sum,s)=>sum+s.w,0);
+  let roll=Math.random()*total;
+  for(const s of weighted){
+    roll-=s.w;
+    if(roll<=0)return s;
+  }
+  return weighted[0];
+}
+function chargeSkinChestProgress(amount){
+  const chest=ensureSkinChest();
+  if(!chest){resetSkinChestResultState();return null;}
+  if(chest.pendingSkin){
+    chest.progress=100;
+    if(!lastSkinChestAdvanced)lastSkinChestBefore=100;
+    lastSkinChestAfter=100;
+    return skinById(chest.pendingSkin);
+  }
+  const before=chest.progress;
+  const after=Math.min(100,before+Math.max(0,Math.round(num(amount,25))));
+  chest.progress=after;
+  if(!lastSkinChestAdvanced)lastSkinChestBefore=before;
+  lastSkinChestAfter=after;
+  lastSkinChestAdvanced=true;
+  if(after>=100){
+    const reward=pickSkinChestReward();
+    if(reward.id==='__coins__'){
+      chest.progress=0;
+      chest.pendingSkin=null;
+      chest.claimedAt=Date.now();
+      chest.totalOpened++;
+      addCoins(reward.bonus,{silent:true});
+      lastSkinChestAfter=100;
+      setTimeout(()=>showRewardPopup('COLLECTION COMPLETE','All skins owned.<br>Skin Chest paid <b style="color:#FFD740">+'+reward.bonus+' coins</b>.','coins'),900);
+      return reward;
+    }
+    chest.progress=100;
+    chest.pendingSkin=reward.id;
+    return reward;
+  }
+  return null;
+}
+function advanceSkinChest(isWin){
+  const chest=ensureSkinChest();
+  if(!chest){resetSkinChestResultState();return null;}
+  lastSkinChestBefore=chest.progress;
+  lastSkinChestAfter=chest.progress;
+  lastSkinChestAdvanced=false;
+  if(!isWin)return null;
+  return chargeSkinChestProgress(25);
+}
+function skinChestTease(progress,pending,kind){
+  const wins=skinChestWinCount(progress);
+  if(pending)return 'CHEST READY - CLAIM YOUR SKIN';
+  if(wins>=3)return '3/4 WINS - CHEST ALMOST FULL';
+  if(kind==='over')return 'Win games to charge the skin chest.';
+  if(lastSkinChestAdvanced)return '+25% charged. Win '+(4-wins)+' more.';
+  return 'Win games to charge.';
+}
+function updateResultSkinChest(kind,animate){
+  const chest=ensureSkinChest();
+  const box=document.getElementById(kind+'-skin-chest');
+  if(!box||!chest)return;
+  const fill=document.getElementById(kind+'-skin-chest-fill');
+  const count=document.getElementById(kind+'-skin-chest-count');
+  const tease=document.getElementById(kind+'-skin-chest-tease');
+  const pending=!!chest.pendingSkin;
+  const from=(kind==='win'&&lastSkinChestAdvanced)?lastSkinChestBefore:chest.progress;
+  const to=(kind==='win'&&lastSkinChestAdvanced)?lastSkinChestAfter:chest.progress;
+  box.classList.toggle('ready',pending||to>=100);
+  box.classList.toggle('charged',lastSkinChestAdvanced&&kind==='win');
+  if(count)count.textContent=(pending?'READY':skinChestWinCount(to)+'/4 WINS');
+  if(tease)tease.textContent=skinChestTease(to,pending,kind);
+  if(fill){
+    fill.style.width=Math.max(0,Math.min(100,from))+'%';
+    if(animate&&from!==to){
+      requestAnimationFrame(()=>setTimeout(()=>{fill.style.width=Math.max(0,Math.min(100,to))+'%';},120));
+    }else{
+      fill.style.width=Math.max(0,Math.min(100,to))+'%';
+    }
+  }
+}
+function pendingSkinChestSkin(){
+  const chest=ensureSkinChest();
+  return chest&&chest.pendingSkin?skinById(chest.pendingSkin):null;
+}
+function skinChestBlocksResult(){
+  return skinRevealOpen||!!pendingSkinChestSkin();
+}
+function scheduleSkinRevealAfterResult(kind){
+  kind=kind==='over'?'over':'win';
+  if(!pendingSkinChestSkin())return;
+  const seq=++skinRevealSeq;
+  const waitThenReveal=(delay)=>{
+    setTimeout(()=>{
+      if(seq!==skinRevealSeq)return;
+      const skin=pendingSkinChestSkin();
+      if(!skin||!resultScreenVisible(kind))return;
+      if(postGameRewardBlocksChest(kind)){
+        waitThenReveal(1100);
+        return;
+      }
+      triggerSkinRevealCinematic(skin);
+    },delay);
+  };
+  waitThenReveal(5600);
+}
+function closeSkinReveal(){
+  const overlay=document.getElementById('skin-reveal-overlay');
+  if(!overlay)return;
+  skinRevealOpen=false;
+  overlay.classList.remove('show','phase-shake','phase-crack','phase-burst','phase-silhouette','phase-color','phase-name','phase-claim','claiming');
+  overlay.setAttribute('aria-hidden','true');
+}
+function triggerSkinRevealCinematic(skin){
+  skin=skin||pendingSkinChestSkin();
+  if(!skin)return;
+  const overlay=document.getElementById('skin-reveal-overlay');
+  if(!overlay)return;
+  const avatar=document.getElementById('skin-reveal-avatar');
+  const rarity=document.getElementById('skin-reveal-rarity');
+  const name=document.getElementById('skin-reveal-name');
+  const desc=document.getElementById('skin-reveal-desc');
+  const adBtn=document.getElementById('skin-reveal-ad-btn');
+  const coinBtn=document.getElementById('skin-reveal-coin-btn');
+  overlay.style.setProperty('--skinRevealColor',skin.glow||'#FFD740');
+  overlay.style.setProperty('--skinRevealRarity',rarityColor(skin.rarity));
+  setColorAlphaVars(overlay,'skinRevealColor',skin.glow||'#FFD740',[.16,.24,.32,.42,.55,.70]);
+  setColorAlphaVars(overlay,'skinRevealRarity',rarityColor(skin.rarity),[.22,.35,.55]);
+  if(avatar){
+    avatar.className='skin-reveal-avatar skin-'+skin.id;
+    avatar.dataset.fx=skin.fx||skin.id;
+    avatar.style.setProperty('--skinColor',skin.body);
+    avatar.style.setProperty('--skinGlow',skin.glow);
+    avatar.style.background='linear-gradient(160deg,'+skin.accent+','+skin.body+' 62%,#050512)';
+    avatar.innerHTML='<span class="texture-layer"></span>';
+  }
+  if(rarity){rarity.textContent=skin.rarity;rarity.style.color=rarityColor(skin.rarity);}
+  if(name)name.textContent=skin.name.toUpperCase();
+  if(desc)desc.textContent=skin.desc;
+  if(adBtn){adBtn.textContent='WATCH AD - CLAIM FREE';adBtn.disabled=false;}
+  if(coinBtn){coinBtn.textContent='400 COINS';coinBtn.disabled=false;}
+  skinRevealOpen=true;
+  overlay.setAttribute('aria-hidden','false');
+  overlay.className='skin-reveal-overlay show';
+  const phases=[
+    [0,'phase-shake'],
+    [500,'phase-crack'],
+    [1100,'phase-burst'],
+    [1400,'phase-silhouette'],
+    [2000,'phase-color'],
+    [2500,'phase-name'],
+    [3000,'phase-claim']
+  ];
+  phases.forEach(([delay,cls])=>setTimeout(()=>{if(skinRevealOpen)overlay.classList.add(cls);},delay));
+  Sensory.play('chest');Haptic.pulse('chest');
+  setTimeout(()=>{if(skinRevealOpen){Sensory.play('skin');Haptic.pulse('skin');}},1450);
+  setTimeout(()=>{if(skinRevealOpen){rewardFlash('gold');shake(.65);}},2100);
+}
+function finishSkinChestClaim(skinId,method){
+  const chest=ensureSkinChest();
+  const skin=skinById(skinId||(chest&&chest.pendingSkin));
+  if(!chest||!skin||skin.id==='default')return false;
+  unlockSkin(skin.id);
+  equipSkin(skin.id);
+  chest.pendingSkin=null;
+  chest.progress=0;
+  chest.claimedAt=Date.now();
+  chest.totalOpened++;
+  lastSkinChestBefore=0;
+  lastSkinChestAfter=0;
+  lastSkinChestAdvanced=false;
+  saveGame();
+  applyEquippedSkin();
+  refreshMetaUI();
+  updateResultSkinChest('win');
+  updateResultSkinChest('over');
+  playEquipCelebration(skin.id,method);
+  return true;
+}
+function claimSkinWithAd(skinId){
+  const chest=ensureSkinChest();
+  const id=skinId||chest&&chest.pendingSkin;
+  const skin=skinById(id);
+  if(!chest||!id||!skin||skin.id==='default')return;
+  const overlay=document.getElementById('skin-reveal-overlay');
+  const btn=document.getElementById('skin-reveal-ad-btn');
+  if(overlay)overlay.classList.add('claiming');
+  if(btn){btn.textContent='AD LOADING';btn.disabled=true;}
+  showRewardedAd({
+    context:'skin_chest',
+    onComplete:()=>finishSkinChestClaim(id,'ad'),
+    onFail:(reason)=>{
+      if(overlay)overlay.classList.remove('claiming');
+      if(btn){btn.textContent=reason==='frequency_limit'?'AD LIMIT - USE COINS':'TRY AD AGAIN';btn.disabled=false;}
+      Sensory.play('bad');Haptic.pulse('bad');
+    }
+  });
+}
+function claimSkinWithCoins(skinId,cost){
+  const chest=ensureSkinChest();
+  const id=skinId||chest&&chest.pendingSkin;
+  const skin=skinById(id);
+  const price=Math.max(0,Math.round(num(cost,400)));
+  if(!chest||!id||!skin||skin.id==='default')return;
+  const target=document.getElementById('skin-reveal-coin-btn')||document.getElementById('skin-reveal-overlay');
+  if(!spendCoins(price,target)){
+    floatTxt('NEED '+Math.max(0,price-(playerData?playerData.coins:0))+' COINS',innerWidth*.5,innerHeight*.48,'#FF8A80',36,'boom');
+    Sensory.play('deny');Haptic.pulse('deny');
+    return;
+  }
+  finishSkinChestClaim(id,'coins');
+}
+function playEquipCelebration(skinId,method){
+  const skin=skinById(skinId);
+  closeSkinReveal();
+  rewardFlash('gold');
+  shake(.85);
+  ringBurst(0,0,56);
+  floatTxt('NEW SKIN!',innerWidth*.5,innerHeight*.38,skin.glow,62,'spin');
+  setTimeout(()=>floatTxt((method==='coins'?'PURCHASED':'EQUIPPED'),innerWidth*.5,innerHeight*.52,'#00E676',42,'boom'),560);
+  Sensory.play('skin');Haptic.pulse('skin');
+}
+window.claimSkinWithAd=claimSkinWithAd;
+window.claimSkinWithCoins=claimSkinWithCoins;
 function renderMissions(){
   const list=document.getElementById('mission-list');if(!list||!playerData)return;
   list.innerHTML='';
@@ -1946,7 +2662,7 @@ function renderContentUI(){
     setText('world-title','All Worlds Previewed');setText('world-sub','Current: '+cur.name+' - more worlds later');setBar('world-fill',100);
     if(orb)orb.style.setProperty('--worldColor',cur.color);
   }
-  updateResultChest('win');updateResultChest('over');
+  updateResultChest('win');updateResultChest('over');updateResultSkinChest('win');updateResultSkinChest('over');
 }
 function updateResultChest(kind){
   const el=document.getElementById(kind+'-chest-result');if(!el||!playerData)return;
@@ -2018,7 +2734,7 @@ function animateChestCoinsToWallet(coins){
     c.style.left=sx+'px';c.style.top=sy+'px';
     c.style.transition='transform 1.05s cubic-bezier(.18,.82,.22,1), opacity 1.05s ease-out';
     c.style.transitionDelay=(i*24)+'ms';
-    document.body.appendChild(c);
+    appendCoinFxNode(c);
     const dx=endX-sx,dy=endY-sy;
     requestAnimationFrame(()=>{
       c.style.transform='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px)) scale(.35)';
@@ -2367,6 +3083,9 @@ function refreshMetaUI(){
     setText('next-skin-text','All skins unlocked!');setText('next-skin-percent','100%');setBar('next-skin-fill',100);
     renderDailyUI();
   }
+  updateRunStreakBadge();
+  renderDailyChallengeUI();
+  renderCrowdMilestoneUI();
   renderContentUI();renderPreviewSquad();renderShop();renderFreshnessMenu();
   if(window.Sensory)Sensory.refreshUI();
   if(window.MetaDopamine)window.MetaDopamine.refreshMenu();
@@ -2466,6 +3185,90 @@ function updateResultNextSkin(kind){
   t.textContent='Next skin: '+next.name+' - '+shortCoinAmount(Math.min(playerData.coins,next.price))+'/'+shortCoinAmount(next.price)+' coins';
   f.style.width=pct+'%';
 }
+function trySkinForRun(id){
+  const s=skinById(id);
+  if(!s||!playerData)return;
+  if(ownsSkin(s.id)){
+    selectedSkinId=s.id;
+    renderShop();
+    skinAction();
+    return;
+  }
+  if(s.price<=0)return;
+  showRewardedAd({
+    context:'skin_trial',
+    onComplete(){
+      trialSkinId=s.id;
+      trialSkinActive=true;
+      lastTrialSkinId='';
+      lastTrialSkinName='';
+      selectedSkinId=s.id;
+      applyEquippedSkin();
+      refreshMetaUI();
+      rewardFlash('blue');
+      Sensory.play('skin');Haptic.pulse('skin');
+      floatTxt('TRIAL: '+s.name.toUpperCase(),innerWidth*.5,innerHeight*.42,s.glow,34,'spin');
+      startGame();
+    },
+    onFail(){
+      floatTxt('AD NOT READY',innerWidth*.5,innerHeight*.45,'#FF8A80',32,'boom');
+      Sensory.play('deny');Haptic.pulse('deny');
+    }
+  });
+}
+window.trySkinForRun=trySkinForRun;
+function captureTrialSkinResult(){
+  if(!trialSkinActive||!trialSkinId)return false;
+  const s=skinById(trialSkinId);
+  if(!s||s.id!==trialSkinId)return false;
+  lastTrialSkinId=s.id;
+  lastTrialSkinName=s.name;
+  trialSkinActive=false;
+  trialSkinId='';
+  applyEquippedSkin();
+  refreshMetaUI();
+  return true;
+}
+function updateResultTrialSkin(kind){
+  const el=document.getElementById(kind+'-trial-skin');
+  if(!el)return;
+  const s=lastTrialSkinId?skinById(lastTrialSkinId):null;
+  const show=!!(s&&s.id===lastTrialSkinId&&!ownsSkin(s.id));
+  el.classList.toggle('show',show);
+  if(!show){
+    el.innerHTML='';
+    return;
+  }
+  const affordable=playerData&&playerData.coins>=s.price;
+  el.style.setProperty('--trialSkinGlow',s.glow);
+  el.innerHTML=`<div class="result-trial-copy"><span>TRIAL ENDED</span><b>BUY ${s.name.toUpperCase()}?</b><small>${skinPriceLabel(s.price)} - ${activeSkinTrait(s.id).desc||'Fresh style only.'}</small></div><button class="result-trial-buy${affordable?'':' locked'}" type="button" onclick="buyTrialSkin('${s.id}')">${affordable?'BUY':'NEED '+skinPriceLabel(s.price-playerData.coins)}</button>`;
+}
+function buyTrialSkin(id){
+  const s=skinById(id);
+  if(!s||!playerData)return;
+  if(ownsSkin(s.id)){
+    equipSkin(s.id);
+  }else{
+    const target=document.querySelector('.result-trial-skin.show')||document.getElementById('skin-action');
+    if(!spendCoins(s.price,target)){
+      floatTxt('NEED '+Math.max(0,s.price-playerData.coins)+' COINS',innerWidth*.5,innerHeight*.45,'#FF8A80',34,'boom');
+      Sensory.play('deny');Haptic.pulse('deny');
+      updateResultTrialSkin('win');updateResultTrialSkin('over');
+      return;
+    }
+    unlockSkin(s.id);
+    equipSkin(s.id);
+  }
+  lastTrialSkinId='';
+  lastTrialSkinName='';
+  saveGame();applyEquippedSkin();refreshMetaUI();renderShop();
+  updateResultWallet('win',playerData.coins);updateResultWallet('over',playerData.coins);
+  updateResultTrialSkin('win');updateResultTrialSkin('over');
+  rewardFlash('gold');shake(.42);
+  Sensory.play('skin');Haptic.pulse('skin');
+  floatTxt('SKIN BOUGHT!',innerWidth*.5,innerHeight*.42,s.glow,40,'spin');
+}
+window.buyTrialSkin=buyTrialSkin;
 function renderShop(){
   const grid=document.getElementById('skin-grid');if(!grid||!playerData)return;
   grid.innerHTML='';
@@ -2477,9 +3280,12 @@ function renderShop(){
     card.style.borderColor=selectedSkinId===s.id?rarityColor(s.rarity):rarityColor(s.rarity);
     card.style.setProperty('--rarityColor',rarityColor(s.rarity));
     card.style.setProperty('--skinGlow',s.glow);
+    setColorAlphaVars(card,'rarityColor',rarityColor(s.rarity),[.16,.42,.45,.48,.52]);
+    setColorAlphaVars(card,'skinGlow',s.glow,[.36,.42,.70]);
     card.onclick=()=>{CoinFX.remember(card);selectedSkinId=s.id;renderShop();};
     const price=s.price>0?`<div class="price-tag">${owned?'OWNED':shortCoinAmount(s.price)}</div>`:'';
-    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" data-fx="${s.fx||s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}`;
+    const tryBtn=!owned&&s.price>0?`<button class="skin-try-btn" type="button" onclick="event.stopPropagation();trySkinForRun('${s.id}')">TRY</button>`:'';
+    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" data-fx="${s.fx||s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}${tryBtn}`;
     grid.appendChild(card);
   }
   const s=skinById(selectedSkinId),owned=ownsSkin(s.id),equipped=playerData.skins.equipped===s.id;
@@ -2487,9 +3293,9 @@ function renderShop(){
   if(n)n.textContent=s.name;
     if(d)d.textContent=s.rarity+' - '+s.desc+' Passive: '+(activeSkinTrait(s.id).desc||'Fresh style only.')+(owned?'':' - '+skinPriceLabel(s.price));
   const big=document.getElementById('big-skin-preview'),stage=document.getElementById('big-skin-stage'),rar=document.getElementById('skin-rarity-big');
-  if(big){big.className='big-skin skin-'+s.id;big.dataset.fx=s.fx||s.id;big.style.setProperty('--skinColor',s.body);big.style.setProperty('--skinGlow',s.glow);big.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;big.innerHTML='<span class="texture-layer"></span>';}
-  if(stage){stage.style.setProperty('--previewGlow',hexToRgba(s.glow,.32));stage.style.setProperty('--previewAura',hexToRgba(s.glow,.48));stage.style.setProperty('--rarityColor',rarityColor(s.rarity));}
-  if(rar){rar.innerHTML='<span>'+s.rarity+'</span><small>'+skinAuraLabel(s)+'</small>';rar.style.color=rarityColor(s.rarity);rar.style.setProperty('--rarityColor',rarityColor(s.rarity));rar.style.setProperty('--skinAura',hexToRgba(s.glow,.50));}
+  if(big){big.className='big-skin skin-'+s.id;big.dataset.fx=s.fx||s.id;big.style.setProperty('--skinColor',s.body);big.style.setProperty('--skinGlow',s.glow);setColorAlphaVars(big,'skinGlow',s.glow,[.36,.42,.70]);big.style.background=`linear-gradient(160deg,${s.accent},${s.body} 62%,#050512)`;big.innerHTML='<span class="texture-layer"></span>';}
+  if(stage){stage.style.setProperty('--previewGlow',hexToRgba(s.glow,.32));stage.style.setProperty('--previewAura',hexToRgba(s.glow,.48));stage.style.setProperty('--rarityColor',rarityColor(s.rarity));setColorAlphaVars(stage,'rarityColor',rarityColor(s.rarity),[.16,.42,.45,.48,.52]);}
+  if(rar){rar.innerHTML='<span>'+s.rarity+'</span><small>'+skinAuraLabel(s)+'</small>';rar.style.color=rarityColor(s.rarity);rar.style.setProperty('--rarityColor',rarityColor(s.rarity));rar.style.setProperty('--skinAura',hexToRgba(s.glow,.50));setColorAlphaVars(rar,'rarityColor',rarityColor(s.rarity),[.16,.42,.45,.48,.52]);}
   const prog=document.getElementById('shop-progress');
   if(prog){
     if(!owned&&s.price>0){prog.classList.add('show');const pct=Math.min(100,playerData.coins/s.price*100);setText('shop-progress-text',shortCoinAmount(Math.min(playerData.coins,s.price))+'/'+shortCoinAmount(s.price)+' coins');setText('shop-progress-percent',Math.round(pct)+'%');setBar('shop-progress-fill',pct);}else{prog.classList.remove('show');}
@@ -2559,7 +3365,7 @@ function animateRewardCoinsToWallet(kind,reward){
     c.style.transform='translate(-50%,-50%) scale(1)';
     c.style.transition='transform 1.04s cubic-bezier(.18,.82,.22,1), opacity 1.04s ease-out';
     c.style.transitionDelay=(i*38)+'ms';
-    document.body.appendChild(c);
+    appendCoinFxNode(c);
     const dx=endX-(startX+spreadX);
     const dy=endY-(startY+spreadY);
     requestAnimationFrame(()=>{
@@ -2585,8 +3391,8 @@ function playResultCoinReward(kind,reward){
 }
 
 function ladderStepIds(kind){
-  if(kind==='win')return ['win-stars','win-msg','win-coins','win-combo-bonus','win-goal-result','win-next-skin','win-chest-result','win-world-result','win-one-more-hook','win-sub'];
-  return ['over-msg','over-fail-tip','over-close-hook','over-coins','over-combo-bonus','over-goal-result','over-next-skin','over-chest-result','over-one-more-hook','over-sub'];
+  if(kind==='win')return ['win-stars','win-msg','win-coins','win-skin-chest','win-run-streak','win-combo-bonus','win-milestone-result','win-goal-result','win-daily-challenge','win-trial-skin','win-next-skin','win-chest-result','win-world-result','win-one-more-hook','win-sub'];
+  return ['over-msg','over-fail-tip','over-close-hook','over-coins','over-skin-chest','over-run-streak','over-combo-bonus','over-milestone-result','over-goal-result','over-daily-challenge','over-trial-skin','over-next-skin','over-chest-result','over-one-more-hook','over-sub'];
 }
 function clearRewardLadder(kind){
   if(typeof closePostGameReward==='function')closePostGameReward();
@@ -2640,23 +3446,31 @@ function playRewardLadder(kind,reward){
         ['win-stars',220],
         ['win-msg',480],
         ['win-coins',820,'coins'],
-        ['win-combo-bonus',1220],
-        ['win-next-skin',1680],
-        ['win-world-result',2140],
-        ['post-reward',2580,'postReward'],
-        ['win-sub',2940],
-        ['buttons',3440]
+        ['win-run-streak',1120,'streak'],
+        ['win-combo-bonus',1440],
+        ['win-milestone-result',1660,'milestone'],
+        ['win-daily-challenge',1880],
+        ['win-trial-skin',2100],
+        ['win-next-skin',2360],
+        ['win-world-result',2780],
+        ['post-reward',3200,'postReward'],
+        ['win-sub',3560],
+        ['buttons',4060]
       ]
     : [
         ['over-msg',260],
         ['over-fail-tip',640],
         ['over-close-hook',980],
         ['over-coins',1320,'coins'],
-        ['over-combo-bonus',1680],
-        ['over-next-skin',2100],
-        ['post-reward',2520,'postReward'],
-        ['over-sub',2920],
-        ['buttons',3420]
+        ['over-run-streak',1580,'streak'],
+        ['over-combo-bonus',1900],
+        ['over-milestone-result',2140,'milestone'],
+        ['over-daily-challenge',2420],
+        ['over-trial-skin',2620],
+        ['over-next-skin',2940],
+        ['post-reward',3340,'postReward'],
+        ['over-sub',3740],
+        ['buttons',4240]
       ];
   for(const [id,delay,type] of seq){
     setTimeout(()=>{
@@ -2665,6 +3479,8 @@ function playRewardLadder(kind,reward){
       if(type==='postReward'){showPostGameReward(kind,reward,rewardResultSeq);return;}
       showRewardStep(kind,id);
       if(type==='coins')playResultCoinReward(kind,reward);
+      if(type==='streak'&&lastRunStreakBroken){rewardFlash('red');shake(.28);}
+      if(type==='milestone'&&lastMilestoneBonus>0){rewardFlash('gold');shake(.28);}
       if(id.includes('chest')){rewardFlash('gold');shake(.18);}
     },delay);
   }
@@ -2701,7 +3517,7 @@ function postGameRewardBase(reward,kind){
 }
 function hideAllPostRewardPanels(){
   document.querySelectorAll('.result-bonus-card').forEach(panel=>{
-    panel.classList.remove('show','claimed','stopped','ad-offer','ad-loading','ad-success','ad-failed','result-x2','result-x3','result-x0','result-x5','result-x1','active-x2','active-x3','active-x0','active-x5','active-x1');
+    panel.classList.remove('show','claimed','stopped','ad-offer','ad-loading','ad-success','ad-failed','result-x2','result-x3','result-xhalf','result-x0','result-x5','result-x1','active-x2','active-x3','active-xhalf','active-x0','active-x5','active-x1');
     panel.removeAttribute('data-active-mult');
     panel.removeAttribute('data-result-mult');
     panel.removeAttribute('data-ad-mult');
@@ -2723,11 +3539,12 @@ function hideAllPostRewardPanels(){
 }
 const BONUS_STOP_REGIONS=[
   {mult:2,from:0.00,to:0.38,cls:'x2',label:'x2 NICE!',tone:'good'},
-  {mult:0,from:0.38,to:0.62,cls:'x0',label:'x0 MISS!',tone:'miss'},
-  {mult:5,from:0.62,to:0.70,cls:'x5',label:'x5 JACKPOT!',tone:'jackpot'},
-  {mult:1,from:0.70,to:1.00,cls:'x1',label:'x1 SAFE!',tone:'safe'}
+  {mult:.5,from:0.38,to:0.52,cls:'xhalf',label:'x0.5 PARTIAL',tone:'low'},
+  {mult:5,from:0.52,to:0.60,cls:'x5',label:'x5 JACKPOT!',tone:'jackpot'},
+  {mult:1,from:0.60,to:1.00,cls:'x1',label:'x1 SAFE!',tone:'safe'}
 ];
 const BONUS_AD_BOOST_POOLS={
+  '0.5':[1,2,3],
   1:[2,3,4],
   2:[5,7,10],
   3:[6,9,12],
@@ -2763,7 +3580,7 @@ function renderPostRewardAdOffer(st){
   if(before)before.textContent='x'+(st.normalMult||0);
   if(after)after.textContent='x'+(st.offerMult||0);
   if(title)title.textContent=st.adWatched?'AD COMPLETE':st.adLoading?'AD BOOST LOADING':st.offerMult>=10?'MAKE IT x'+st.offerMult:'BOOST TO x'+st.offerMult;
-  if(sub)sub.textContent=st.adWatched?'Boost applied. Coins are flying now.':st.adLoading?'UI preview now. CrazyGames rewarded ad plugs in here later.':'Watch ad to upgrade '+(st.normalCoins||0)+' coins into '+(st.boostedCoins||0)+'.';
+  if(sub)sub.textContent=st.adWatched?'Boost applied. Coins are flying now.':st.adLoading?'Rewarded ad loading. Stay ready.':'Watch ad to upgrade '+(st.normalCoins||0)+' coins into '+(st.boostedCoins||0)+'.';
   if(watch)watch.textContent=st.adWatched?'AD COMPLETE':st.adLoading?'LOADING AD':'WATCH AD x'+(st.offerMult||0);
 }
 function clearBonusCursorLoop(st){
@@ -2787,7 +3604,7 @@ function renderBonusCursor(st){
   const action=postRewardRole(panel,'action');
   const region=bonusRegionAt(st.progress);
   panel.dataset.activeMult=String(region.mult);
-  panel.classList.remove('active-x2','active-x3','active-x0','active-x5','active-x1');
+  panel.classList.remove('active-x2','active-x3','active-xhalf','active-x0','active-x5','active-x1');
   panel.classList.add('active-'+region.cls);
   if(cursor&&track){
     const trackW=track.offsetWidth||312;
@@ -2880,10 +3697,10 @@ function postGameRewardBurst(){
   if(!btn)return;
   const r=btn.getBoundingClientRect();
   const cx=r.left+r.width/2,cy=r.top+r.height/2;
-  const count=st&&st.mult===5?46:st&&st.mult===0?16:30;
+  const count=st&&st.mult===5?46:st&&st.mult<1?18:30;
   for(let i=0;i<count;i++){
     const s=document.createElement('span');
-    s.className='post-reward-burst '+(st?'burst-x'+st.mult:'');
+    s.className='post-reward-burst '+(st&&st.regionCls?'burst-'+st.regionCls:(st?'burst-x'+st.mult:''));
     const a=Math.PI*2*i/count+Math.random()*.35;
     const d=(st&&st.mult===5?80:48)+Math.random()*(st&&st.mult===5?150:105);
     s.style.left=cx+'px';
@@ -2910,6 +3727,7 @@ function stopPostGameReward(){
   const region=bonusRegionAt(st.progress);
   st.mult=region.mult;
   st.normalMult=region.mult;
+  st.regionCls=region.cls;
   st.normalCoins=Math.max(0,Math.round(st.base*region.mult));
   st.finalCoins=st.normalCoins;
   st.offerMult=region.mult>0?pickPostRewardAdMult(region.mult):0;
@@ -2922,20 +3740,20 @@ function stopPostGameReward(){
     const finalEl=postRewardRole(panel,'final');
     const action=postRewardRole(panel,'action');
     const small=postRewardClaimSmall(panel);
-    if(finalEl)finalEl.textContent=region.mult===0?'NO BONUS':'+'+st.finalCoins;
-    if(action)action.textContent=region.mult===0?'NO BONUS':(st.phase==='offer'?'CLAIM OR BOOST':region.label);
-    if(small)small.textContent=region.mult===0?'DONE':'NORMAL CLAIM';
+    if(finalEl)finalEl.textContent='+'+st.finalCoins;
+    if(action)action.textContent=st.phase==='offer'?'CLAIM OR BOOST':region.label;
+    if(small)small.textContent='NORMAL CLAIM';
     panel.querySelectorAll('.result-bonus-zone').forEach(z=>z.classList.remove('won'));
-    const zone=panel.querySelector('.zone-x'+region.mult);
+    const zone=panel.querySelector('.zone-'+region.cls);
     if(zone)zone.classList.add('won');
     renderPostRewardAdOffer(st);
   }
   if(region.mult===5){
     rewardFlash('gold');shake(.75);Sensory.play('chest');Haptic.pulse('chest');
     floatTxt('x5 JACKPOT!',innerWidth*.5,innerHeight*.34,'#FFD740',48,'spin');
-  }else if(region.mult===0){
-    shake(.18);Sensory.play('bad');Haptic.pulse('bad');
-    floatTxt('NO BONUS',innerWidth*.5,innerHeight*.34,'#FF6B6B',34,'');
+  }else if(region.mult<1){
+    shake(.18);Sensory.play('reward');Haptic.pulse('reward');
+    floatTxt(region.label,innerWidth*.5,innerHeight*.34,'#B0BEC5',34,'');
   }else{
     rewardFlash(region.mult>=3?'blue':'gold');shake(.35);Sensory.play('reward');Haptic.pulse('reward');
     floatTxt(region.label,innerWidth*.5,innerHeight*.34,region.mult>=3?'#00E5FF':'#69F0AE',38,'spin');
@@ -2956,41 +3774,63 @@ function watchPostGameRewardAd(){
     const finalEl=postRewardRole(panel,'final');
     const small=postRewardClaimSmall(panel);
     if(title)title.textContent='AD BOOST LOADING';
-    if(sub)sub.textContent='UI preview now. CrazyGames rewarded ad plugs in here later.';
+    if(sub)sub.textContent='Rewarded ad loading. Stay ready.';
     if(action)action.textContent='AD BOOST';
     if(finalEl)finalEl.textContent='x'+st.offerMult;
-    if(small)small.textContent='SIMULATED AD';
+    if(small)small.textContent='REWARDED AD';
     renderPostRewardAdOffer(st);
   }
   Sensory.play('reward');Haptic.pulse('reward');
-  setTimeout(()=>{
-    if(postGameRewardState!==st||st.claimed)return;
-    st.adLoading=false;
-    st.adWatched=true;
-    st.phase='ad-success';
-    st.mult=st.offerMult;
-    st.finalCoins=st.boostedCoins;
-    const p=activePostRewardPanel(st.kind);
-    if(p){
-      p.classList.remove('ad-loading');
-      p.classList.add('ad-success');
-      const title=postRewardRole(p,'ad-title');
-      const sub=postRewardRole(p,'ad-sub');
-      const action=postRewardRole(p,'action');
-      const finalEl=postRewardRole(p,'final');
-      const small=postRewardClaimSmall(p);
-      const watch=p.querySelector('.result-ad-watch');
-      if(title)title.textContent='AD COMPLETE';
-      if(sub)sub.textContent='Boost applied. Coins are flying now.';
-      if(action)action.textContent='BOOSTED x'+st.offerMult;
-      if(finalEl)finalEl.textContent='+'+st.finalCoins;
-      if(small)small.textContent='AD REWARD';
-      if(watch)watch.textContent='AD COMPLETE';
+  showRewardedAd({
+    context:'bonus_boost',
+    onComplete:()=>{
+      if(postGameRewardState!==st||st.claimed)return;
+      st.adLoading=false;
+      st.adWatched=true;
+      st.phase='ad-success';
+      st.mult=st.offerMult;
+      st.finalCoins=st.boostedCoins;
+      const p=activePostRewardPanel(st.kind);
+      if(p){
+        p.classList.remove('ad-loading');
+        p.classList.add('ad-success');
+        const title=postRewardRole(p,'ad-title');
+        const sub=postRewardRole(p,'ad-sub');
+        const action=postRewardRole(p,'action');
+        const finalEl=postRewardRole(p,'final');
+        const small=postRewardClaimSmall(p);
+        const watch=p.querySelector('.result-ad-watch');
+        if(title)title.textContent='AD COMPLETE';
+        if(sub)sub.textContent='Boost applied. Coins are flying now.';
+        if(action)action.textContent='BOOSTED x'+st.offerMult;
+        if(finalEl)finalEl.textContent='+'+st.finalCoins;
+        if(small)small.textContent='AD REWARD';
+        if(watch)watch.textContent='AD COMPLETE';
+      }
+      rewardFlash('gold');shake(st.offerMult>=10?.72:.45);Sensory.play(st.offerMult>=10?'chest':'reward');Haptic.pulse('reward');
+      floatTxt('AD BOOST x'+st.offerMult,innerWidth*.5,innerHeight*.32,st.offerMult>=10?'#FFD740':'#00E5FF',46,'spin');
+      setTimeout(()=>claimPostGameReward('ad'),360);
+    },
+    onFail:(reason)=>{
+      if(postGameRewardState!==st||st.claimed)return;
+      st.adLoading=false;
+      st.phase='ad-failed';
+      const p=activePostRewardPanel(st.kind);
+      if(p){
+        p.classList.remove('ad-loading');
+        p.classList.add('ad-failed');
+        const title=postRewardRole(p,'ad-title');
+        const sub=postRewardRole(p,'ad-sub');
+        const action=postRewardRole(p,'action');
+        const small=postRewardClaimSmall(p);
+        if(title)title.textContent=reason==='frequency_limit'?'AD LIMIT REACHED':'AD NOT READY';
+        if(sub)sub.textContent='Claim the normal bonus now, or try again in a bit.';
+        if(action)action.textContent='CLAIM NORMAL';
+        if(small)small.textContent='NORMAL CLAIM';
+      }
+      Sensory.play('bad');Haptic.pulse('bad');
     }
-    rewardFlash('gold');shake(st.offerMult>=10?.72:.45);Sensory.play(st.offerMult>=10?'chest':'reward');Haptic.pulse('reward');
-    floatTxt('AD BOOST x'+st.offerMult,innerWidth*.5,innerHeight*.32,st.offerMult>=10?'#FFD740':'#00E5FF',46,'spin');
-    setTimeout(()=>claimPostGameReward('ad'),360);
-  },760);
+  });
 }
 function claimPostGameReward(mode){
   const st=postGameRewardState;
@@ -3150,6 +3990,10 @@ function updateWinResultActionForWorldUnlock(world){
 function continueToMenu(){
   cancelAutoBossChestOpen();
   closePostGameReward();
+  closeResurrectOffer();
+  closeSkinReveal();
+  skinRevealSeq++;
+  resurrectOfferState=null;
   hideWorldUnlockCinematic();
   postGameRewardResultSeq++;
   postGameRewardShownSeq=0;
@@ -3312,7 +4156,7 @@ function makeSkinTex(s){
 }
 function applyEquippedSkin(){
   if(!playerData||!matHumanBody)return;
-  const s=skinById(playerData.skins.equipped);const tex=makeSkinTex(s);
+  const s=skinById(activeRunSkinId());const tex=makeSkinTex(s);
   const legendary=s.rarity==='LEGENDARY'||s.rarity==='MYTHIC';
   const metal=s.id==='robot'||s.id==='gold'||s.id==='mecha_gold'||s.fx==='cyber'||s.fx==='omega';
   matHumanBody.color.set(s.body);matHumanBody.emissive.set(s.glow);matHumanBody.emissiveIntensity=legendary?.34:.22;matHumanBody.map=tex;matHumanBody.roughness=metal?.30:.48;matHumanBody.metalness=metal?.45:.06;matHumanBody.needsUpdate=true;
@@ -3328,10 +4172,24 @@ function applyEquippedSkin(){
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RENDERER + SCENE
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-renderer=new THREE.WebGLRenderer({antialias:!IS_MOBILE&&window.devicePixelRatio<2});
+function detectWebGL(){
+  try{
+    const canvas=document.createElement('canvas');
+    return !!(window.WebGLRenderingContext&&(canvas.getContext('webgl')||canvas.getContext('experimental-webgl')));
+  }catch(e){return false;}
+}
+function showWebGLFallback(){
+  document.body.innerHTML='<div class="webgl-fallback" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#06000f;font-family:Rajdhani,Arial,sans-serif;text-align:center;color:#fff;padding:2rem"><div><div style="font-size:52px;margin-bottom:16px">!</div><h2 style="font-size:28px;color:#FFD740;margin:0 0 12px">DEVICE NOT SUPPORTED</h2><p style="color:rgba(255,255,255,.70);font-size:16px;line-height:1.7;margin:0">Your browser does not support 3D graphics (WebGL).<br>Try Chrome or Firefox on a newer device.</p></div></div>';
+}
+if(!detectWebGL()){
+  showWebGLFallback();
+  throw new Error('WebGL not supported');
+}
+const rendererDpr=Math.min(window.devicePixelRatio||1, window.PerfMode ? PerfMode.dprCap() : (IS_MOBILE?1.25:2));
+renderer=new THREE.WebGLRenderer({antialias:!IS_MOBILE&&rendererDpr<2,powerPreference:'high-performance'});
 renderer.setSize(innerWidth,innerHeight);
 // Mobile: cap DPR at 1.25 (cuts fragment work ~56% vs DPR=2)
-renderer.setPixelRatio(Math.min(devicePixelRatio, window.PerfMode ? PerfMode.dprCap() : (IS_MOBILE?1.25:2)));
+renderer.setPixelRatio(rendererDpr);
 // Mobile: no shadow maps â€” biggest single GPU saving, invisible at this camera angle
 renderer.shadowMap.enabled=!IS_MOBILE;
 if(!IS_MOBILE) renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -3343,7 +4201,7 @@ renderer.toneMapping     = IS_MOBILE ? THREE.LinearToneMapping : THREE.ACESFilmi
 // Slightly higher exposure on mobile to match ACES brightness without the ACES cost
 renderer.toneMappingExposure = IS_MOBILE ? 1.55 : 1.2;
 document.body.prepend(renderer.domElement);
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio, window.PerfMode ? PerfMode.dprCap() : (IS_MOBILE?1.25:2)));refreshScreenSpaceBackdrops();});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, window.PerfMode ? PerfMode.dprCap() : (IS_MOBILE?1.25:2)));refreshScreenSpaceBackdrops();});
 flashEl=document.getElementById('reward-flash');
 // Cache hot-path DOM refs once (elements exist in HTML from page load)
 _hudCrowdEl  = document.getElementById('crowd-lbl');
@@ -4115,9 +4973,9 @@ function buildClimate(w){
      MARS â€” red dust storm
      Stronger than base atmosphere dust; adds near-ground rolling sand.
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  if(id==='mars'){
+  if(id==='mars'||id==='lava_core'){
     const cnt=isMob?60:100;
-    const d=makePoints(cnt,0xFF9550,.28,.28,false);
+    const d=makePoints(cnt,hexNum(w.accent||'#FF9550'),id==='lava_core' ? .34 : .28,id==='lava_core' ? .38 : .28,false);
     for(let i=0;i<cnt;i++){
       d.pos[i*3]  =(Math.random()-.5)*80;
       d.pos[i*3+1]=.4+Math.random()*3.5;   // near ground
@@ -4128,7 +4986,7 @@ function buildClimate(w){
 
     // Distant upper haze streaks
     const cnt2=isMob?30:55;
-    const d2=makePoints(cnt2,0xFF6D2D,.18,.18,false);
+    const d2=makePoints(cnt2,hexNum(w.dash||w.star||'#FF6D2D'),id==='lava_core' ? .22 : .18,id==='lava_core' ? .26 : .18,false);
     for(let i=0;i<cnt2;i++){
       d2.pos[i*3]  =(Math.random()-.5)*120;
       d2.pos[i*3+1]=8+Math.random()*18;
@@ -4172,9 +5030,9 @@ function buildClimate(w){
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      SATURN â€” golden debris drift (slow ring-particle rain)
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  else if(id==='saturn'){
+  else if(id==='saturn'||id==='crystal_realm'){
     const cnt=isMob?70:120;
-    const d=makePoints(cnt,0xFFD06A,.20,.40,false);
+    const d=makePoints(cnt,hexNum(w.color||w.accent||'#FFD06A'),.20,.40,false);
     const angV=new Float32Array(cnt);
     const radii=new Float32Array(cnt);
     for(let i=0;i<cnt;i++){
@@ -4193,7 +5051,7 @@ function buildClimate(w){
 
     // Soft purple sparkles
     const cnt2=isMob?30:55;
-    const d2=makePoints(cnt2,0xB388FF,.14,.35,false);
+    const d2=makePoints(cnt2,hexNum(w.good||w.accent||'#B388FF'),.14,.35,false);
     for(let i=0;i<cnt2;i++){
       d2.pos[i*3]  =(Math.random()-.5)*100;
       d2.pos[i*3+1]=12+Math.random()*20;
@@ -4206,10 +5064,10 @@ function buildClimate(w){
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      TOXIC â€” acid rain + rising mist bubbles
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  else if(id==='toxic'){
+  else if(id==='toxic'||id==='ocean_abyss'){
     // Falling acid drops
     const cnt=isMob?80:140;
-    const d=makePoints(cnt,0xAEEA00,.10,.55,false);
+    const d=makePoints(cnt,hexNum(w.good||w.accent||'#AEEA00'),id==='ocean_abyss' ? .14 : .10,id==='ocean_abyss' ? .42 : .55,false);
     const dropVY=new Float32Array(cnt);
     for(let i=0;i<cnt;i++){
       d.pos[i*3]  =(Math.random()-.5)*80;
@@ -4223,7 +5081,7 @@ function buildClimate(w){
 
     // Rising mist bubbles
     const cnt2=isMob?35:60;
-    const d2=makePoints(cnt2,0x69F0AE,.22,.28,false);
+    const d2=makePoints(cnt2,hexNum(w.accent||w.edge||'#69F0AE'),id==='ocean_abyss' ? .28 : .22,id==='ocean_abyss' ? .38 : .28,false);
     const bubVY=new Float32Array(cnt2);
     for(let i=0;i<cnt2;i++){
       d2.pos[i*3]  =(Math.random()-.5)*70;
@@ -4239,11 +5097,11 @@ function buildClimate(w){
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      CYBER â€” neon pixel glitch rain (matrix-style vertical streams)
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  else if(id==='cyber'){
+  else if(id==='cyber'||id==='neon_tokyo'||id==='digital_void'){
     const cnt=isMob?80:140;
     // Mix of pink and cyan drops
-    const d=makePoints(cnt,0xEA80FC,.13,.65,false);
-    const d2=makePoints(Math.floor(cnt*.6),0x00E5FF,.13,.55,false);
+    const d=makePoints(cnt,hexNum(w.color||w.accent||'#EA80FC'),.13,.65,false);
+    const d2=makePoints(Math.floor(cnt*.6),hexNum(w.edge||w.good||'#00E5FF'),.13,.55,false);
     const vY=new Float32Array(cnt);
     const vY2=new Float32Array(Math.floor(cnt*.6));
     for(let i=0;i<cnt;i++){
@@ -4265,7 +5123,7 @@ function buildClimate(w){
 
     // Horizontal scan-line flickers in screen-space
     const sl=isMob?12:20;
-    const sd=makePoints(sl,0xEA80FC,.10,.40,true);
+    const sd=makePoints(sl,hexNum(w.dash||w.color||'#EA80FC'),.10,.40,true);
     for(let i=0;i<sl;i++){
       sd.pos[i*3]  =(Math.random()-.5)*3.2;
       sd.pos[i*3+1]=(Math.random()-.5)*2.0;
@@ -4278,10 +5136,10 @@ function buildClimate(w){
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      VOID â€” star-shard lightning pulses + drifting cosmic dust
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  else if(id==='void'){
+  else if(id==='void'||id==='cosmic_storm'){
     const cnt=isMob?60:110;
-    const d=makePoints(cnt,0xFFD740,.16,.50,false);
-    const d2=makePoints(Math.floor(cnt*.7),0xFF4081,.12,.40,false);
+    const d=makePoints(cnt,hexNum(w.good||w.star||'#FFD740'),.16,.50,false);
+    const d2=makePoints(Math.floor(cnt*.7),hexNum(w.accent||w.bad||'#FF4081'),.12,.40,false);
     for(let i=0;i<cnt;i++){
       d.pos[i*3]  =(Math.random()-.5)*100;
       d.pos[i*3+1]=2+Math.random()*28;
@@ -4300,7 +5158,7 @@ function buildClimate(w){
 
     // Lightning bolt: single thin screen-space line simulated with points
     const lb=isMob?18:30;
-    const ld=makePoints(lb,0xFFD740,.08,.0,true); // starts invisible
+    const ld=makePoints(lb,hexNum(w.edge||w.good||'#FFD740'),.08,.0,true); // starts invisible
     for(let i=0;i<lb;i++){
       ld.pos[i*3]=(Math.random()-.5)*.2;
       ld.pos[i*3+1]=.4-i/lb*.8;
@@ -4320,7 +5178,7 @@ function updateClimate(dt,t){
   const cx=camera.position.x;
 
   /* â”€â”€ MARS: rolling ground-level sand + upper haze drift â”€â”€ */
-  if(id==='mars'){
+  if(id==='mars'||id==='lava_core'){
     const{sandPos,sandCnt,sandMesh,hazePos,hazeCnt,hazeMesh}=state;
     const sp=sandPos;
     for(let i=0;i<sandCnt;i++){
@@ -4377,7 +5235,7 @@ function updateClimate(dt,t){
   }
 
   /* â”€â”€ SATURN: ring-debris orbit + purple sparkle drift â”€â”€ */
-  else if(id==='saturn'){
+  else if(id==='saturn'||id==='crystal_realm'){
     const{ringPos,ringCnt,ringMesh,ringAngV,ringRadii,ringAngs,sparkPos,sparkCnt,sparkMesh}=state;
     for(let i=0;i<ringCnt;i++){
       ringAngs[i]+=ringAngV[i]*dt*60;
@@ -4406,7 +5264,7 @@ function updateClimate(dt,t){
   }
 
   /* â”€â”€ TOXIC: acid rain falling + mist bubbles rising â”€â”€ */
-  else if(id==='toxic'){
+  else if(id==='toxic'||id==='ocean_abyss'){
     const{dropPos,dropCnt,dropMesh,dropVY,bubPos,bubCnt,bubMesh,bubVY}=state;
     for(let i=0;i<dropCnt;i++){
       dropPos[i*3+1]-=dt*dropVY[i];
@@ -4438,7 +5296,7 @@ function updateClimate(dt,t){
   }
 
   /* â”€â”€ CYBER: glitch pixel rain + scan line flicker â”€â”€ */
-  else if(id==='cyber'){
+  else if(id==='cyber'||id==='neon_tokyo'||id==='digital_void'){
     const{cberPos,cberCnt,cberMesh,cberVY,cberPos2,cberCnt2,cberMesh2,cberVY2,scanPos,scanCnt,scanMesh}=state;
     for(let i=0;i<cberCnt;i++){
       cberPos[i*3+1]-=dt*cberVY[i];
@@ -4476,7 +5334,7 @@ function updateClimate(dt,t){
   }
 
   /* â”€â”€ VOID: cosmic dust drift + lightning pulses â”€â”€ */
-  else if(id==='void'){
+  else if(id==='void'||id==='cosmic_storm'){
     const{voidPos,voidCnt,voidMesh,voidPos2,voidCnt2,voidMesh2,ltPos,ltCnt,ltMesh}=state;
     for(let i=0;i<voidCnt;i++){
       voidPos[i*3]  +=dt*(.06+(i%5)*.01);
@@ -6890,6 +7748,7 @@ function updateHUD(){
   // â”€â”€ Crowd label: only repaint + animate when crowd actually changes â”€â”€
   // distRnd changes EVERY frame (dist ticks up continuously), so we must
   // NOT gate the crowd animation on it â€” that caused the trembling bug.
+  const now=performance.now();
   if(crowd!==_lastHudCrowd){
     _lastHudCrowd=crowd;
     if(_hudCrowdEl){
@@ -6901,8 +7760,10 @@ function updateHUD(){
     }
   }
   // â”€â”€ Progress bar + dist label: update every frame but NO animation â”€â”€
+  if(now-_hudLastDistPaint<33)return;
   const distRnd=Math.round(dist);
   if(distRnd!==_lastHudDist){
+    _hudLastDistPaint=now;
     _lastHudDist=distRnd;
     const pct=Math.min(100,(dist/C.bossDist)*100);
     if(_hudProgEl) _hudProgEl.style.width=pct+'%';
@@ -7113,33 +7974,40 @@ function resetMilestoneSpectacle(){
   const lbl=document.getElementById('crowd-lbl');
   if(lbl)lbl.classList.remove('army-mode','milestone-pop');
 }
-function milestones(){
-  if(!m50&&crowd>=50){
-    m50=true;
-    showMilestone('50 HEROES','Resistance grows!','#69F0AE');
-    burst(cxVar,2,dist+6,0x00FFAA,30);
+function triggerCrowdMilestone(def){
+  if(!def)return;
+  if(def.kind==='small'){
+    showMilestone(def.title,def.sub,def.color);
+    burst(cxVar,2,dist+6,def.burst||0x00FFAA,def.threshold>=50?30:22);
+    setCrowdMilestonePop();
+    rewardFlash('green');
     if(window.Sensory)Sensory.play('milestone');
     if(window.Haptic)Haptic.pulse('milestone');
+    return;
   }
-  if(!m100&&crowd>=100){
-    m100=true;
-    crowdSpectacle('100 CROWD!','THE ARMY IS FORMING','#FFD740',0xFFD740,{ringCount:48,burstCount:IS_MOBILE?38:64,shake:.75,flash:'gold',ringKind:'gold'});
-    floatTxt('100 CROWD!',innerWidth*.5,innerHeight*.34,'#FFD740',80,'spin');
-  }
-  if(!m200&&crowd>=200){
-    m200=true;
-    crowdSpectacle('200 STRONG','UNSTOPPABLE FORCE','#00E5FF',0x00E5FF,{ringCount:56,burstCount:IS_MOBILE?42:72,shake:.9,flash:'blue',ringKind:'cyan',rainCount:3});
+  const opts={ringCount:48,burstCount:IS_MOBILE?38:64,shake:.75,flash:'gold',ringKind:'gold'};
+  if(def.kind==='blue')Object.assign(opts,{ringCount:56,burstCount:IS_MOBILE?42:72,shake:.9,flash:'blue',ringKind:'cyan',rainCount:2});
+  if(def.kind==='violet')Object.assign(opts,{ringCount:62,burstCount:IS_MOBILE?46:78,shake:.92,flash:'blue',ringKind:'cyan',rainCount:3});
+  if(def.kind==='army')Object.assign(opts,{ringCount:72,burstCount:IS_MOBILE?52:88,shake:1.05,flash:'gold',ringKind:'gold',rainCount:4,toastDur:1600});
+  if(def.kind==='legend')Object.assign(opts,{ringCount:82,burstCount:IS_MOBILE?58:98,shake:1.12,flash:'gold',ringKind:'gold',rainCount:5,toastDur:1800});
+  if(def.kind==='army'||def.threshold>=500)activateArmyMode();
+  crowdSpectacle(def.title,def.sub,def.color,def.burst||0xFFD740,opts);
+  if(def.threshold===200){
     document.body.classList.add('milestone-blue');
     setTimeout(()=>document.body.classList.remove('milestone-blue'),1050);
-    floatTxt('200 STRONG!',innerWidth*.5,innerHeight*.33,'#00E5FF',76,'spin');
   }
-  if(!m500&&crowd>=500){
-    m500=true;
-    activateArmyMode();
-    crowdSpectacle('ARMY MODE','500 UNITED - AI IS DOOMED','#FF8F00',0xFF8F00,{ringCount:72,burstCount:IS_MOBILE?52:88,shake:1.05,flash:'gold',ringKind:'gold',rainCount:4,toastDur:1600});
-    floatTxt('ARMY MODE',innerWidth*.5,innerHeight*.31,'#FFD740',86,'spin');
+  floatTxt(def.title,innerWidth*.5,innerHeight*(def.threshold>=500?.31:.33),def.color||'#FFD740',def.threshold>=500?86:76,'spin');
+  if(def.kind==='army'||def.kind==='legend'){
     if(window.Sensory)Sensory.play('feverStart');
     if(window.Haptic)Haptic.pulse('feverStart');
+  }
+}
+function milestones(){
+  for(const def of CROWD_MILESTONE_DEFS){
+    if(!runMilestoneHits[def.id]&&crowd>=def.threshold){
+      runMilestoneHits[def.id]=true;
+      triggerCrowdMilestone(def);
+    }
   }
 }
 
@@ -7162,6 +8030,87 @@ function updateCameraShake(dt){
     if(shakeDur<=0)shakeAmt=0;
   }
 }
+
+function canOfferResurrect(sourceState){
+  if(resurrectUsedThisRun||runRewardGranted)return false;
+  if(sourceState!=='RUNNING')return false;
+  if(dist<45||dist>C.bossDist-25)return false;
+  return true;
+}
+function setResurrectOfferVisible(show){
+  const offer=document.getElementById('resurrect-offer');
+  if(!offer)return;
+  offer.classList.toggle('show',!!show);
+  offer.setAttribute('aria-hidden',show?'false':'true');
+}
+function showResurrectOffer(){
+  const offer=document.getElementById('resurrect-offer');
+  if(!offer||!resurrectOfferState){finalizeLoss();return;}
+  const pct=Math.max(0,Math.min(99,Math.round((resurrectOfferState.dist/C.bossDist)*100)));
+  setText('resurrect-progress',pct+'%');
+  setText('resurrect-peak',String(Math.max(0,Math.round(resurrectOfferState.peak||0))));
+  setText('resurrect-sub','Watch an ad to revive 30 humans and keep this run alive.');
+  const btn=document.getElementById('resurrect-watch-btn');
+  if(btn){btn.textContent='WATCH AD';btn.classList.remove('loading');btn.disabled=false;}
+  gState='RESURRECT_OFFER';
+  setResurrectOfferVisible(true);
+  Sensory.play('reward');
+  Haptic.pulse('reward');
+}
+function closeResurrectOffer(){
+  setResurrectOfferVisible(false);
+  const btn=document.getElementById('resurrect-watch-btn');
+  if(btn){btn.textContent='WATCH AD';btn.classList.remove('loading');btn.disabled=false;}
+}
+function declineResurrectOffer(){
+  closeResurrectOffer();
+  resurrectOfferState=null;
+  finalizeLoss();
+}
+function claimResurrectWithAd(){
+  if(!resurrectOfferState)return;
+  const btn=document.getElementById('resurrect-watch-btn');
+  if(btn){btn.textContent='LOADING';btn.classList.add('loading');btn.disabled=true;}
+  setText('resurrect-sub','Rewarded ad loading. Your team is standing by.');
+  showRewardedAd({
+    context:'resurrect',
+    onComplete:executeResurrect,
+    onFail:(reason)=>{
+      const b=document.getElementById('resurrect-watch-btn');
+      if(b){b.textContent='TRY AGAIN';b.classList.remove('loading');b.disabled=false;}
+      setText('resurrect-sub',reason==='frequency_limit'?'Ad limit reached. Take the loss for now.':'Ad not ready. Try again or take the loss.');
+      Sensory.play('bad');Haptic.pulse('bad');
+    }
+  });
+}
+function executeResurrect(){
+  const st=resurrectOfferState;
+  if(!st)return;
+  resurrectUsedThisRun=true;
+  resurrectOfferState=null;
+  closeResurrectOffer();
+  gState='RUNNING';
+  setScreenMode('play');
+  crowd=30;
+  peak=Math.max(peak||0,crowd);
+  combo=0;streak=0;feverNextCombo=C.feverCombo||5;
+  inDangerZone=false;dangerPeak=0;dangerPulseTimer=0;
+  clearInst();
+  rebuildFormation();
+  drawCrowd(cxVar,dist+5,elapsed,'run');
+  document.getElementById('crowd-lbl').style.color='#fff';
+  document.getElementById('danger-edge').classList.remove('warn');
+  document.getElementById('dodge-warn').classList.remove('show');
+  document.getElementById('consequence-bar').classList.remove('show');
+  updateHUD();
+  rewardFlash('green');
+  shake(.55);
+  ringBurst(cxVar,dist+5,34);
+  floatTxt('REVIVED +30',innerWidth*.5,innerHeight*.42,'#69F0AE',48,'spin');
+  Sensory.play('chest');Haptic.pulse('bossWin');
+}
+window.claimResurrectWithAd=claimResurrectWithAd;
+window.declineResurrectOffer=declineResurrectOffer;
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    WIN / LOSE
@@ -7205,10 +8154,14 @@ function doWin(){
   document.getElementById('win-coins').textContent='+'+reward+' COINS';
   document.getElementById('win-sub').textContent='Level '+currentRunLevel+' complete -> Level '+playerData.level+' unlocked. '+lastFreshnessResultText;
   updateResultWallet('win',walletBefore);
+  updateResultRunStreak('win');
   updateResultComboBonus('win');
+  updateResultMilestone('win');
   updateResultRunGoal('win');
+  updateResultDailyChallenge('win');
   updateResultNextSkin('win');
   updateResultChest('win');
+  updateResultSkinChest('win');
   updateResultWorld('win');
   updateWinResultActionForWorldUnlock(lastWorldUnlocked?worldUnlock.world:null);
 
@@ -7227,16 +8180,21 @@ function doWin(){
   setTimeout(()=>{
     if(seq!==winSeq||gState!=='POST_DANCE_RUN')return;
     gState='WIN';
+    captureTrialSkinResult();
     setScreenMode('result');
     document.getElementById('s-win').style.display='flex';
     document.getElementById('s-win').classList.add('active');
     document.getElementById('s-over').classList.remove('active');
+    updateResultSkinChest('win',true);
+    updateResultTrialSkin('win');
     playRewardLadder('win',reward);
+    scheduleSkinRevealAfterResult('win');
     autoOpenBossChestAfterResult('win');
   },8000);
 }
 function doLose(){
-  if(gState==='GAMEOVER')return;
+  if(gState==='GAMEOVER'||gState==='RESURRECT_OFFER')return;
+  const sourceState=gState;
   if(feverActive)endFever('broken');
   gState='GAMEOVER';
   renderFreshnessHUD();
@@ -7248,6 +8206,18 @@ function doLose(){
   document.getElementById('dodge-warn').classList.remove('show');
   document.getElementById('consequence-bar').classList.remove('show');
   shake(1.0*DRAMA_POWER); rewardFlash('red'); DramaFX.flash('defeat',520);
+  if(canOfferResurrect(sourceState)){
+    resurrectOfferState={seq:++resurrectOfferSeq,dist,peak,crowd:Math.max(0,crowd||0),sourceState};
+    setTimeout(()=>{
+      if(resurrectOfferState&&resurrectOfferState.seq===resurrectOfferSeq&&gState==='GAMEOVER')showResurrectOffer();
+    },800);
+    return;
+  }
+  finalizeLoss();
+}
+function finalizeLoss(){
+  gState='GAMEOVER';
+  closeResurrectOffer();
   const reward=grantRunReward(false);
   const walletBefore=Math.max(0,playerData.coins-reward);
   const tip=buildFailTip();
@@ -7259,16 +8229,24 @@ function doLose(){
   document.getElementById('over-coins').textContent='+'+reward+' COINS';
   document.getElementById('over-sub').textContent='Next fix: '+tip.fix+' - '+lastFreshnessResultText;
   updateResultWallet('over',walletBefore);
+  updateResultRunStreak('over');
   updateResultComboBonus('over');
+  updateResultMilestone('over');
   updateResultRunGoal('over');
+  updateResultDailyChallenge('over');
   updateResultNextSkin('over');
   updateResultChest('over');
+  updateResultSkinChest('over');
   setTimeout(()=>{
+    captureTrialSkinResult();
     setScreenMode('result');
     document.getElementById('s-over').style.display='flex';
     document.getElementById('s-over').classList.add('active');
     document.getElementById('s-win').classList.remove('active');
+    updateResultSkinChest('over');
+    updateResultTrialSkin('over');
     playRewardLadder('over',reward);
+    scheduleSkinRevealAfterResult('over');
     autoOpenBossChestAfterResult('over');
   },1100);
 }
@@ -7833,6 +8811,10 @@ window.MenuGameplayPreview=MenuGameplayPreview;
 function startGame(){
   cancelAutoBossChestOpen();
   closePostGameReward();
+  closeResurrectOffer();
+  closeSkinReveal();
+  skinRevealSeq++;
+  resurrectOfferState=null;
   Sensory.unlock();Sensory.play('start');Haptic.pulse('start');
   hideWorldUnlockCinematic();
   clearRewardLadder('win');clearRewardLadder('over');
@@ -7846,8 +8828,12 @@ function startGame(){
   document.getElementById('s-win').classList.remove('active');
   if(!playerData)loadGame();
   currentRunLevel=playerData?playerData.level:1;
+  trialSkinActive=!!trialSkinId;
+  lastTrialSkinId='';
+  lastTrialSkinName='';
+  applyEquippedSkin();
   applyWorldTheme(selectedWorldDef(),true);
-  runRewardGranted=false;lastRunReward=0;
+  runRewardGranted=false;lastRunReward=0;resurrectUsedThisRun=false;
   const usedPreview=window.MenuGameplayPreview&&MenuGameplayPreview.activate(currentRunLevel);
   if(!usedPreview)resetState();
   startFreshnessRun();
@@ -7864,8 +8850,8 @@ function resetState(){
   runStartCrowd=startCount;
   crowd=startCount;peak=startCount;
   dist=0;cxVar=0;tgtX=0;speedUpShown=false;currentRunSpeed=C.speed;currentRunSpeedMult=1;resetFeverState();resetNearMissState();resetMilestoneSpectacle();
-  shield=false;combo=0;streak=0;maxComboThisRun=0;lastComboBonusCoins=0;lastBaseRunReward=0;lastGoalReward=0;lastGoalCompleted=false;lastGoalTitle='';lastGoalProgressText='';lastFailReason='';lastFailFix='';lastWorldUnlocked=false;lastWorldName='';lastWorldUnlockBonus=0;lastWorldUnlockId='';goodChoices=0;badChoices=0;
-  m50=false;m100=false;m200=false;m500=false;
+  shield=false;combo=0;streak=0;maxComboThisRun=0;lastComboBonusCoins=0;lastBaseRunReward=0;lastRunStreakBefore=0;lastRunStreakAfter=savedRunStreak();lastRunStreakBonusCoins=0;lastRunStreakMultiplier=1;lastRunStreakBroken=false;lastGoalReward=0;lastGoalCompleted=false;lastGoalTitle='';lastGoalProgressText='';lastMilestoneBonus=0;lastMilestoneTitle='';lastMilestoneCount=0;lastMilestoneBest=0;lastDailyChallengeCompleted=false;lastDailyChallengeReward=0;lastDailyChallengeTitle='';lastDailyChallengeProgressText='';lastFailReason='';lastFailFix='';lastWorldUnlocked=false;lastWorldName='';lastWorldUnlockBonus=0;lastWorldUnlockId='';goodChoices=0;badChoices=0;
+  runMilestoneHits={};
   bossActive=false;bossPhase=0;bossHP=100;bossClash=0;
   bossHumanBaseZ=0;bossAIBaseZ=0;humanChargeOff=0;aiChargeOff=0;bossClashDone=false;
   runCamIntroActive=false;runCamIntroT=0;
@@ -8030,12 +9016,18 @@ const DevTools={
       currentRunLevel=playerData.level;
       saveGame();
       refreshMetaUI();
+    }
+    if(worldIsUnlocked(w,playerData.level)){
+      const res=selectWorldTheme(w.id);
+      this.refresh();
+      this.log((unlock?'Unlocked ':'Selected ')+w.name);
+      return res;
     }else{
       currentRunLevel=w.level;
     }
     applyWorldTheme(w,true);
     this.refresh();
-    this.log((unlock?'Unlocked ':'Theme: ')+w.name);
+    this.log('Theme: '+w.name);
   },
   showMenu(){
     gState='MENU';
@@ -8073,6 +9065,17 @@ const DevTools={
     this.setCrowd(this.num('dev-crowd-input',Math.max(180,crowd||180)));
     goodChoices=Math.max(goodChoices,5);
     badChoices=0;
+    if(!runStats)runStats={good:0,bad:0,orbs:0,dodges:0,risk:0,comeback:0};
+    const dailyInfo=(typeof ensureDailyChallengeState==='function')?ensureDailyChallengeState():null;
+    const dailyStat=dailyInfo&&dailyInfo.challenge?dailyInfo.challenge.stat:'';
+    if(dailyStat==='good'||dailyStat==='cleanGood')runStats.good=Math.max(runStats.good||0,dailyInfo.challenge.targetValue||5);
+    if(dailyStat==='orbs')runStats.orbs=Math.max(runStats.orbs||0,dailyInfo.challenge.targetValue||10);
+    if(dailyStat==='dodges')runStats.dodges=Math.max(runStats.dodges||0,dailyInfo.challenge.targetValue||2);
+    if(dailyStat==='risk')runStats.risk=Math.max(runStats.risk||0,dailyInfo.challenge.targetValue||1);
+    if(dailyStat==='comeback')runStats.comeback=Math.max(runStats.comeback||0,dailyInfo.challenge.targetValue||1);
+    if(dailyStat==='combo')maxComboThisRun=Math.max(maxComboThisRun,dailyInfo.challenge.targetValue||5);
+    if(dailyStat==='crowd')peak=Math.max(peak||0,dailyInfo.challenge.targetValue||crowd||180);
+    if(dailyStat==='distance')dist=Math.max(dist,(C&&C.bossDist?C.bossDist:520));
     if(gState!=='BOSS')beginBoss(dist+22);
     doWin();
     this.refresh();

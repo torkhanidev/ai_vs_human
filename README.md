@@ -82,25 +82,36 @@ Each gate has two panels (left + right). Choose one by steering into it.
 - Visual upgrade on crowd label, extra spectacle bursts
 
 ### Post-Game Bonus Spinner
-- On win: bonus wheel with x0, x1, x2, x3, x5 (Jackpot) multipliers
+- On win: bonus wheel with x1/2, x1, x2, x3, x5 (Jackpot) multipliers
+- Skin Chest: every 4 wins reveals a locked skin, claimable by rewarded ad or 400 coins
+- Skin Trial: locked shop skins can be tried for one run after a rewarded ad, then offered for purchase on the result screen
+- Run Streak: consecutive wins add a saved streak badge and reward multiplier, from x1.05 on the second win up to x1.25
+- Daily Challenge: one rotating objective per day rewards +400 coins and +25% skin chest charge
+- Crowd Milestones: 25 to 1000 humans trigger run spectacle and one-time coin bonuses
 - Tap to stop and claim bonus coins
 
 ---
 
 ## Worlds / Themes
 
-6 unlockable planets, one new every 30 levels:
+12 planets total, with the original worlds restored and the newer worlds appended:
 
 | ID | Name | Unlock | Road | Edge | Sky |
 |---|---|---|---|---|---|
 | `mars` | Mars Colony | 1 (default) | `#4A1B12` | `#FF6D2D` | `#150608` |
-| `ice` | Frozen Moon | 30 | `#173854` | `#B3F5FF` | `#061826` |
-| `saturn` | Saturn Rings | 60 | `#1F1A3D` | `#FFD06A` | `#09071F` |
-| `toxic` | Toxic Venus | 90 | `#183018` | `#AEEA00` | `#071A08` |
-| `cyber` | Cyber Planet | 120 | `#101D4C` | `#EA80FC` | `#05051F` |
-| `void` | Galaxy Void | 150 | `#130B2E` | `#FFD740` | `#060006` |
+| `ice` | Frozen Moon | 20 | `#173854` | `#B3F5FF` | `#061826` |
+| `saturn` | Saturn Rings | 40 | `#1F1A3D` | `#FFD06A` | `#09071F` |
+| `toxic` | Toxic Venus | 60 | `#183018` | `#AEEA00` | `#071A08` |
+| `cyber` | Cyber Planet | 80 | `#101D4C` | `#EA80FC` | `#05051F` |
+| `void` | Galaxy Void | 100 | `#130B2E` | `#FFD740` | `#060006` |
+| `neon_tokyo` | Neon Tokyo | 120 | `#2A174A` | `#00E5FF` | `#040820` |
+| `lava_core` | Lava Core | 140 | `#3D0000` | `#FF6D00` | `#1A0000` |
+| `ocean_abyss` | Ocean Abyss | 160 | `#003D4D` | `#00BCD4` | `#000A14` |
+| `crystal_realm` | Crystal Realm | 180 | `#32205C` | `#EA80FC` | `#0D001F` |
+| `digital_void` | Digital Void | 200 | `#001F2E` | `#00E5FF` | `#000000` |
+| `cosmic_storm` | Cosmic Storm | 220 | `#1A0050` | `#FFD740` | `#08001A` |
 
-Each world has unique climate particles (sand, snow, debris, acid rain, glitch rain, cosmic dust), sky type, fog density, and visual mood. Select from the **Space Map** overlay.
+Each world has unique climate particles, sky type, fog density, and visual mood. Select from the **Space Map** overlay, which shows ready/locked/selected states and the next unlock target.
 
 ---
 
@@ -168,7 +179,7 @@ Boss Chests have 10% chance to grant a random RARE/EPIC skin.
 - **Next Run Goal:** Dynamic rotating goal card with bonus coins
 - **Result Screen Ladder:** Timed reveal: title, coins, combo, skin, chest, bonus spinner
 - **Phase Flash:** Large centered text for key events
-- **Milestone Banner:** Full-screen at 50/100/200/500 humans with slow-motion spectacle
+- **Milestone Banner:** Full-screen crowd thresholds from 25 to 1000 humans with slow-motion spectacle and one-time rewards
 - **Secret Crowd Waves:** Rare events: TEAM WAVE, MEGA JUMP, SPIRAL CHEER
 
 ---
@@ -223,10 +234,11 @@ All data saves to `localStorage`. No backend required.
 ## Economy
 
 - **Coins** are the only currency
-- Earned from: runs, next-run goals, missions, daily rewards, boss chests, world unlocks, fever rewards, comeback bonuses
+- Earned from: runs, next-run goals, missions, daily rewards, daily challenges, boss chests, world unlocks, fever rewards, comeback bonuses
 - Spent on: purchasing skins
 - Win reward formula: `85 + level*14 + sqrt(survivors)*7.6 + log10 bonus + 90`
 - Fail reward formula: `32 + level*5 + sqrt(survivors)*2.9`
+- Consecutive win streaks multiply the run reward bonus: 2 wins = x1.05, 3 = x1.10, scaling to x1.25
 
 ---
 

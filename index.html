@@ -15,8 +15,8 @@
 <link rel="stylesheet" href="css/30-skin-fx-overrides.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/40-content-missions-chest-world.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v150">
-<link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=boss-reflex-ui-v150">
-<link rel="stylesheet" href="css/90-late-overrides.css?v=ads-reward-ui-v156">
+<link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=milestones-v160">
+<link rel="stylesheet" href="css/90-late-overrides.css?v=milestones-v160">
 </head>
 <body>
 <div id="hud">
@@ -116,6 +116,7 @@
     <div class="meta-cluster">
       <div class="meta-pill blue">LVL <span id="ui-level">1</span></div>
       <div class="meta-pill">BEST <span id="ui-best">0</span></div>
+      <div class="meta-pill run-streak-pill" id="ui-run-streak"><span>STREAK</span> <b data-role="streak-count">0</b> <small data-role="streak-mult">NEXT WIN</small></div>
     </div>
     <div class="meta-cluster">
       <button class="meta-pill sound-pill perf-pill" id="perf-toggle" onclick="toggleQuality(event)" type="button">HD</button>
@@ -162,21 +163,7 @@
         <div class="next-row"><span id="next-skin-text">Next skin progress</span><span id="next-skin-percent">0%</span></div>
         <div class="mini-bar"><div class="mini-fill" id="next-skin-fill"></div></div>
       </div>
-      <div class="hero-extra-stack">
-        <div class="content-card chest-card" id="boss-chest-card">
-          <div class="chest-visual">
-            <div class="chest-icon"><span class="ui-icon icon-chest" aria-hidden="true"></span></div>
-            <div class="chest-info"><b id="boss-chest-title">Boss Chest</b><span id="boss-chest-sub">Win 3 levels to open.</span><div class="tiny-bar"><div class="tiny-fill" id="boss-chest-fill"></div></div></div>
-            <button class="content-btn not-ready" id="boss-chest-action" onclick="claimBossChest()">0/3</button>
-          </div>
-        </div>
-        <div class="content-card world-card" id="next-world-card">
-          <div class="world-row">
-            <div class="world-orb" id="world-orb"></div>
-            <div class="world-text"><b id="world-title">Next World</b><span id="world-sub">Keep winning to unlock.</span><div class="tiny-bar"><div class="tiny-fill" id="world-fill"></div></div></div>
-          </div>
-        </div>
-      </div>
+      
     </div>
     <div class="content-panel v14 menu-action">
       <div class="content-stack">
@@ -184,6 +171,12 @@
           <b><span class="ui-icon icon-gift" aria-hidden="true"></span>Daily Gift</b>
           <span id="daily-goal-text">Checking server time...</span>
           <div class="mini-bar"><div class="mini-fill" id="daily-goal-fill"></div></div>
+        </div>
+        <div class="content-card milestone-card" id="crowd-milestone-card">
+          <div class="content-head"><div class="content-title">MILESTONE</div><div class="content-sub" id="crowd-milestone-reward">+80 coins</div></div>
+          <div class="milestone-title" id="crowd-milestone-title">Reach 25 humans</div>
+          <div class="milestone-progress-row"><span id="crowd-milestone-progress">0/25</span><b>CROWD</b></div>
+          <div class="mini-bar"><div class="mini-fill" id="crowd-milestone-fill"></div></div>
         </div>
         <div class="content-card session-card" id="session-card">
           <div class="content-head"><div class="content-title">FRESH RUN</div><div class="content-sub" id="menu-run-modifier">new twist</div></div>
@@ -258,6 +251,36 @@
         <button class="shop-action equip" id="skin-action" onclick="skinAction()">EQUIPPED</button>
       </div>
     </div>
+</div>
+</div>
+<div class="resurrect-offer" id="resurrect-offer" aria-hidden="true">
+  <div class="resurrect-card">
+    <div class="resurrect-kicker">SECOND STAND</div>
+    <div class="resurrect-title">REVIVE 30 HUMANS</div>
+    <div class="resurrect-stats">
+      <span><b id="resurrect-progress">0%</b><small>RUN</small></span>
+      <span><b id="resurrect-peak">0</b><small>PEAK</small></span>
+    </div>
+    <div class="resurrect-sub" id="resurrect-sub">Watch an ad to keep this run alive.</div>
+    <div class="resurrect-actions">
+      <button class="resurrect-watch" id="resurrect-watch-btn" type="button" onclick="claimResurrectWithAd()">WATCH AD</button>
+      <button class="resurrect-skip" type="button" onclick="declineResurrectOffer()">TAKE LOSS</button>
+    </div>
+  </div>
+</div>
+<div class="skin-reveal-overlay" id="skin-reveal-overlay" aria-hidden="true">
+  <div class="skin-reveal-backdrop">
+    <div class="skin-reveal-chest" id="skin-reveal-chest">
+      <div class="skin-reveal-light"></div>
+      <div class="skin-reveal-avatar" id="skin-reveal-avatar"><span class="texture-layer"></span></div>
+      <div class="skin-reveal-rarity" id="skin-reveal-rarity">RARE</div>
+      <div class="skin-reveal-name" id="skin-reveal-name">NEW SKIN</div>
+      <div class="skin-reveal-desc" id="skin-reveal-desc">A new identity for your army.</div>
+    </div>
+    <div class="skin-reveal-actions">
+      <button class="skin-reveal-ad-btn" id="skin-reveal-ad-btn" type="button" onclick="claimSkinWithAd()">WATCH AD - CLAIM FREE</button>
+      <button class="skin-reveal-coin-btn" id="skin-reveal-coin-btn" type="button" onclick="claimSkinWithCoins()">400 COINS</button>
+    </div>
   </div>
 </div>
 <div class="screen" id="s-over">
@@ -276,8 +299,24 @@
       <div class="close-gap" id="over-dist-gap">Reach the final clash with a bigger team.</div>
     </div>
     <div class="result-coins" id="over-coins">+0 COINS</div>
+    <div class="skin-chest-progress" id="over-skin-chest">
+      <div class="chest-progress-header">
+        <span class="chest-icon-mini"></span>
+        <span class="chest-progress-label">SKIN CHEST</span>
+        <span class="chest-progress-count" id="over-skin-chest-count">0/4 WINS</span>
+      </div>
+      <div class="chest-progress-bar">
+        <div class="chest-progress-fill" id="over-skin-chest-fill"></div>
+        <div class="chest-progress-segments"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="chest-tease" id="over-skin-chest-tease">Win games to charge.</div>
+    </div>
+    <div class="result-run-streak" id="over-run-streak"><span>RUN STREAK</span> <b>WIN TO START</b></div>
     <div class="result-combo" id="over-combo-bonus">0</div>
+    <div class="result-milestone" id="over-milestone-result"><span>MILESTONE 0/25</span> <b>NEXT +80</b></div>
     <div class="result-goal" id="over-goal-result">GOAL 0/0</div>
+    <div class="result-daily-challenge" id="over-daily-challenge"><span>DAILY 0/1</span> <b>TRY AGAIN</b></div>
+    <div class="result-trial-skin" id="over-trial-skin"></div>
     <div class="result-sub" id="over-sub">Try again with cleaner gates.</div>
     <div class="result-next" id="over-next-skin">
       <div id="over-next-text">Next skin progress</div>
@@ -290,7 +329,7 @@
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
-        <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
+        <div class="result-bonus-zone zone-xhalf"><b>x0.5</b><small>PART</small></div>
         <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
         <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
         <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
@@ -325,8 +364,24 @@
     <div class="stars" id="win-stars">RANK SSS</div>
     <p id="win-msg">Humanity survives!</p>
     <div class="result-coins" id="win-coins">+0 COINS</div>
+    <div class="skin-chest-progress" id="win-skin-chest">
+      <div class="chest-progress-header">
+        <span class="chest-icon-mini"></span>
+        <span class="chest-progress-label">SKIN CHEST</span>
+        <span class="chest-progress-count" id="win-skin-chest-count">0/4 WINS</span>
+      </div>
+      <div class="chest-progress-bar">
+        <div class="chest-progress-fill" id="win-skin-chest-fill"></div>
+        <div class="chest-progress-segments"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="chest-tease" id="win-skin-chest-tease">Win games to charge.</div>
+    </div>
+    <div class="result-run-streak" id="win-run-streak"><span>1 WIN STREAK</span> <b>WIN AGAIN TO MULTIPLY</b></div>
     <div class="result-combo" id="win-combo-bonus">0</div>
+    <div class="result-milestone" id="win-milestone-result"><span>MILESTONE 0/25</span> <b>NEXT +80</b></div>
     <div class="result-goal" id="win-goal-result">GOAL 0/0</div>
+    <div class="result-daily-challenge" id="win-daily-challenge"><span>DAILY 0/1</span> <b>TRY AGAIN</b></div>
+    <div class="result-trial-skin" id="win-trial-skin"></div>
     <div class="result-sub" id="win-sub">Level complete. Keep the streak going.</div>
     <div class="result-next" id="win-next-skin">
       <div id="win-next-text">Next skin progress</div>
@@ -340,7 +395,7 @@
       <div class="result-bonus-base"><b>+<span data-role="base">20</span> COINS</b></div>
       <div class="result-bonus-wheel result-bonus-track" data-role="track" aria-label="Tap to stop bonus cursor">
         <div class="result-bonus-zone zone-x2"><b>x2</b><small>GOOD</small></div>
-        <div class="result-bonus-zone zone-x0"><b>x0</b><small>!</small></div>
+        <div class="result-bonus-zone zone-xhalf"><b>x0,5</b><small>PART</small></div>
         <div class="result-bonus-zone zone-x5"><b>x5</b><small>JACKPOT</small></div>
         <div class="result-bonus-zone zone-x1"><b>x1</b><small>SAFE</small></div>
         <div class="result-bonus-cursor" data-role="cursor"><i></i></div>
@@ -433,8 +488,8 @@
 </div>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/core/game.js?v=ads-reward-ui-v156"></script>
-<script src="js/ui/mobile-bottom-dock.js?v=boss-reflex-ui-v150"></script>
+<script src="vendor/three.r128.min.js?v=r128"></script>
+<script src="js/core/game.js?v=world-map-polish-v162"></script>
+<script src="js/ui/mobile-bottom-dock.js?v=world-map-polish-v162"></script>
 </body>
 </html>
