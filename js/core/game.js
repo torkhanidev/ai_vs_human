@@ -24,12 +24,11 @@ const C={
     {t:'add',  v:50,  lbl:'+15',  col:0x0D47A1, tc:'#64B5F6', good:true,  w:12},
     {t:'add',  v:100, lbl:'+20',  col:0x4A148C, tc:'#EA80FC', good:true,  w:6},
     {t:'mult', v:2,   lbl:'X2',   col:0xE65100, tc:'#FFD740', good:true,  w:16},
-    {t:'mult', v:3,   lbl:'MAX',  col:0x880E4F, tc:'#FF80AB', good:true,  w:6},
     {t:'sub',  v:20,  lbl:'-5',   col:0xB71C1C, tc:'#FF8A80', good:false, w:13},
     {t:'sub',  v:50,  lbl:'-10',  col:0x880000, tc:'#FF5252', good:false, w:10},
     {t:'sub',  v:100, lbl:'-15',  col:0x5D0000, tc:'#FF1744', good:false, w:7},
     {t:'sub',  v:120, lbl:'-20',  col:0x3E0000, tc:'#FF1744', good:false, w:4},
-    {t:'double_bad', lbl:'DANGER',col:0x4A148C, tc:'#EA80FC', good:false, w:5},
+    {t:'double_bad', lbl:'/2',    col:0x4A148C, tc:'#EA80FC', good:false, w:5},
   ]
 };
 
@@ -650,7 +649,6 @@ const DAILY_CHALLENGES=[
   {id:'daily_crowd',title:'Big Crowd',desc:'Reach today\'s crowd target.',stat:'crowd',target:lv=>Math.min(320,120+lv*9)},
   {id:'daily_orbs',title:'Orb Sweep',desc:'Collect glowing orbs.',stat:'orbs',target:lv=>lv>=10?16:10},
   {id:'daily_dodge',title:'Clean Dodges',desc:'Dodge obstacles cleanly.',stat:'dodges',target:()=>2,minLevel:2},
-  {id:'daily_bounty',title:'Bounty Gate',desc:'Take one bounty gate.',stat:'risk',target:()=>1,minLevel:4},
   {id:'daily_rescue',title:'Last Stand',desc:'Trigger one rescue moment.',stat:'comeback',target:()=>1,minLevel:3},
   {id:'daily_distance',title:'Reach The Clash',desc:'Reach the boss road.',stat:'distance',target:()=>100},
   {id:'daily_perfect',title:'Clean Picks',desc:'Pick good gates and avoid bad ones.',stat:'cleanGood',target:lv=>lv>=10?5:4}
@@ -1043,7 +1041,6 @@ const V18_BALANCE={
 const RUN_MODIFIERS=[
   {id:'rush',name:'Rush Road',short:'RUSH',desc:'Faster road, bigger payout',speedMul:1.08,gateSpacingMul:.94,rewardMult:1.08,accent:'#00E5FF'},
   {id:'rescue',name:'Rescue Signal',short:'RESCUE',desc:'One stronger comeback moment',speedMul:.98,gateSpacingMul:1.04,comebackBoost:8,rewardMult:1.03,accent:'#69F0AE'},
-  {id:'bounty',name:'Bounty Gates',short:'BOUNTY',desc:'Risk gates can pay coins',speedMul:1.01,gateSpacingMul:1,riskChance:.34,rewardMult:1.06,accent:'#FFD740'},
   {id:'focus',name:'Boss Focus',short:'FOCUS',desc:'Longer reflex window, smaller reward',speedMul:1,gateSpacingMul:1.02,bossMiniMs:90,bossMisses:1,rewardMult:.98,accent:'#EA80FC'},
   {id:'flow',name:'Flow Run',short:'FLOW',desc:'More breathing room for combos',speedMul:.96,gateSpacingMul:1.08,rewardMult:1.02,accent:'#80D8FF'}
 ];
@@ -1058,7 +1055,7 @@ const WORLD_TRAITS={
   lava_core:{name:'Neptune Boost',desc:'Bigger reward with a trickier route.',rewardMult:1.07,badReduction:-.04,accent:'#315CFF'},
   ocean_abyss:{name:'Pluto Light',desc:'Orbs pull in extra humans.',orbEvery:4,comebackBoost:4,accent:'#C66BFF'},
   crystal_realm:{name:'Green Focus',desc:'Boss prompts stay readable for longer.',bossMiniMs:90,accent:'#35F56D'},
-  digital_void:{name:'Haumea Spark',desc:'Bonus gates appear slightly more often.',bossMiniMs:70,riskChance:.06,accent:'#FFB3D9'},
+  digital_void:{name:'Haumea Spark',desc:'More breathing room for combos and boss prompts.',gateSpacingMul:1.03,bossMiniMs:70,accent:'#FFB3D9'},
   cosmic_storm:{name:'Sun Finale',desc:'A bright final reward with a brave boss challenge.',rewardMult:1.09,bossDebt:6,accent:'#FFD000'}
 };
 const SKIN_TRAITS={
@@ -1214,7 +1211,7 @@ function runDifficultyProfile(level){
     bossMiniMisses:lv<=5?5:lv<=8?4:3,
     bossMiniPerfectMs:lv<=5?420:lv<=8?370:340,
     bossMiniLateMs:lv<=5?920:lv<=8?820:760,
-    lesson:bonus?'BONUS COIN LEVEL':playerLv<=1?'GOOD VS BAD':playerLv===2?'DODGE + COPY':playerLv===3?'REFLEX BOSS':playerLv===4?'POWER ITEMS':playerLv===5?'DANGER GATES':'FULL RUN'
+    lesson:bonus?'BONUS COIN LEVEL':playerLv<=1?'GOOD VS BAD':playerLv===2?'DODGE + COPY':playerLv===3?'REFLEX BOSS':playerLv===4?'POWER ITEMS':playerLv===5?'/2 GATES':'FULL RUN'
   };
 }
 function gateAllowedForProgression(g,profile){
@@ -1668,14 +1665,12 @@ function predictedRunModifier(){
 }
 function microGoalTemplates(mod){
   const level=playerData?Math.max(1,playerData.level||1):1;
-  const riskReady=(mod&&mod.id==='bounty')||level>=4;
   return [
     {id:'good',title:'Good Gates',target:level>=10?5:4,reward:45+Math.min(80,level*4),stat:'good'},
     {id:'orbs',title:'Collect Orbs',target:level>=8?16:12,reward:35+Math.min(70,level*3),stat:'orbs'},
     {id:'combo',title:'Combo x'+(level>=10?6:5),target:level>=10?6:5,reward:55+Math.min(85,level*4),stat:'combo'},
     {id:'crowd',title:'Reach Crowd',target:Math.min(220,70+level*8),reward:60+Math.min(100,level*4),stat:'crowd'},
     {id:'dodge',title:'Clean Dodges',target:2,reward:45+Math.min(75,level*4),stat:'dodges',minLevel:2},
-    {id:'risk',title:'Take Bounty',target:1,reward:70+Math.min(120,level*5),stat:'risk',enabled:riskReady},
     {id:'win',title:'Beat Boss',target:1,reward:90+Math.min(140,level*6),stat:'win'}
   ].filter(g=>(!g.minLevel||level>=g.minLevel)&&g.enabled!==false);
 }
@@ -1684,10 +1679,6 @@ function buildMicroGoalSet(mod){
   if(!pool.length)return [];
   const seed=runModifierSeed()+((mod&&RUN_MODIFIERS.findIndex(x=>x.id===mod.id))||0);
   const out=[];
-  if(mod&&mod.id==='bounty'){
-    const risk=pool.find(g=>g.id==='risk');
-    if(risk)out.push(Object.assign({progress:0,complete:false},risk));
-  }
   for(let i=0;out.length<3&&i<pool.length*2;i++){
     const g=pool[(seed+i*2)%pool.length];
     if(!out.some(x=>x.id===g.id))out.push(Object.assign({progress:0,complete:false},g));
@@ -1828,14 +1819,6 @@ function orbPickupBonus(){
   let bonus=skin&&skin.orbBonus?skin.orbBonus:0;
   if(trait&&trait.orbEvery&&runStats&&(runStats.orbs||0)>0&&(runStats.orbs||0)%trait.orbEvery===0)bonus+=1;
   return bonus;
-}
-function riskGateChance(){
-  const mod=activeRunModifier||null,trait=activeWorldTrait();
-  return Math.max(0,(mod&&mod.riskChance||0)+(trait&&trait.riskChance||0));
-}
-function makeRiskGate(){
-  const level=playerData?Math.max(1,playerData.level||1):1;
-  return{t:'risk',v:12+Math.min(24,Math.floor(level/3)*2),coin:35+Math.min(90,level*5),debt:8+Math.min(34,Math.floor(level/2)),lbl:'RISK',col:0x795500,tc:'#FFD740',good:true,w:1};
 }
 function addCrowdMembers(gain){
   gain=Math.max(0,Math.round(gain||0));
@@ -3454,8 +3437,8 @@ function playResultCoinReward(kind,reward){
 }
 
 function ladderStepIds(kind){
-  if(kind==='win')return ['win-stars','win-msg','win-coins','win-skin-chest','win-run-streak','win-combo-bonus','win-milestone-result','win-goal-result','win-daily-challenge','win-trial-skin','win-next-skin','win-chest-result','win-world-result','win-one-more-hook','win-sub'];
-  return ['over-msg','over-fail-tip','over-close-hook','over-coins','over-skin-chest','over-run-streak','over-combo-bonus','over-milestone-result','over-goal-result','over-daily-challenge','over-trial-skin','over-next-skin','over-chest-result','over-one-more-hook','over-sub'];
+  if(kind==='win')return ['win-stars','win-coins','win-skin-chest','win-milestone-result','win-goal-result','win-daily-challenge','win-trial-skin','win-next-skin','win-chest-result','win-world-result','win-one-more-hook'];
+  return ['over-msg','over-fail-tip','over-close-hook','over-coins','over-skin-chest','over-milestone-result','over-goal-result','over-daily-challenge','over-trial-skin','over-next-skin','over-chest-result','over-one-more-hook'];
 }
 function clearRewardLadder(kind){
   if(typeof closePostGameReward==='function')closePostGameReward();
@@ -3507,33 +3490,26 @@ function playRewardLadder(kind,reward){
   const seq=isWin
     ? [
         ['win-stars',220],
-        ['win-msg',480],
-        ['win-coins',820,'coins'],
-        ['win-run-streak',1120,'streak'],
-        ['win-combo-bonus',1440],
-        ['win-milestone-result',1660,'milestone'],
-        ['win-daily-challenge',1880],
-        ['win-trial-skin',2100],
-        ['win-next-skin',2360],
-        ['win-world-result',2780],
-        ['post-reward',3200,'postReward'],
-        ['win-sub',3560],
-        ['buttons',4060]
+        ['win-coins',520,'coins'],
+        ['win-milestone-result',820,'milestone'],
+        ['win-daily-challenge',1040],
+        ['win-trial-skin',1260],
+        ['win-next-skin',1500],
+        ['win-world-result',1800],
+        ['post-reward',2140,'postReward'],
+        ['buttons',2500]
       ]
     : [
         ['over-msg',260],
         ['over-fail-tip',640],
         ['over-close-hook',980],
         ['over-coins',1320,'coins'],
-        ['over-run-streak',1580,'streak'],
-        ['over-combo-bonus',1900],
-        ['over-milestone-result',2140,'milestone'],
-        ['over-daily-challenge',2420],
-        ['over-trial-skin',2620],
-        ['over-next-skin',2940],
-        ['post-reward',3340,'postReward'],
-        ['over-sub',3740],
-        ['buttons',4240]
+        ['over-milestone-result',1580,'milestone'],
+        ['over-daily-challenge',1840],
+        ['over-trial-skin',2060],
+        ['over-next-skin',2360],
+        ['post-reward',2740,'postReward'],
+        ['buttons',3180]
       ];
   for(const [id,delay,type] of seq){
     setTimeout(()=>{
@@ -3656,76 +3632,6 @@ function clearBonusCursorLoop(st){
     clearInterval(st.tickTimer);
     st.tickTimer=0;
   }
-  if(st.decisionRaf){
-    cancelAnimationFrame(st.decisionRaf);
-    st.decisionRaf=0;
-  }
-}
-function startPostRewardDecision(st){
-  if(!st)return;
-  clearBonusCursorLoop(st);
-  st.phase='decision';
-  st.running=false;
-  st.stopped=false;
-  st.decisionSeconds=3;
-  st.decisionUntil=(performance&&performance.now?performance.now():Date.now())+st.decisionSeconds*1000;
-  const panel=activePostRewardPanel(st.kind);
-  if(panel){
-    panel.classList.add('decision');
-    const finalEl=postRewardRole(panel,'final');
-    const action=postRewardRole(panel,'action');
-    const small=postRewardClaimSmall(panel);
-    if(finalEl)finalEl.textContent='3';
-    if(action)action.textContent='TAP TO START';
-    if(small)small.textContent='3 SEC READ';
-  }
-  const tick=()=>{
-    if(!postGameRewardState||postGameRewardState!==st||st.phase!=='decision')return;
-    const p=activePostRewardPanel(st.kind);
-    const now=performance&&performance.now?performance.now():Date.now();
-    const left=Math.max(0,st.decisionUntil-now);
-    const pct=left/(st.decisionSeconds*1000);
-    if(p){
-      const count=postRewardRole(p,'decision-count');
-      const fill=postRewardRole(p,'decision-fill');
-      const finalEl=postRewardRole(p,'final');
-      const next=String(Math.max(1,Math.ceil(left/1000)));
-      if(count)count.textContent=next;
-      if(finalEl)finalEl.textContent=next;
-      if(fill)fill.style.transform='scaleX('+Math.max(0,Math.min(1,pct))+')';
-    }
-    if(left<=0){
-      finishPostRewardDecision(st,false);
-      return;
-    }
-    st.decisionRaf=requestAnimationFrame(tick);
-  };
-  tick();
-}
-function finishPostRewardDecision(st,manual){
-  if(!st||st.phase!=='decision'||st.claimed)return;
-  if(st.decisionRaf){
-    cancelAnimationFrame(st.decisionRaf);
-    st.decisionRaf=0;
-  }
-  const panel=activePostRewardPanel(st.kind);
-  if(panel){
-    panel.classList.remove('decision');
-    const fill=postRewardRole(panel,'decision-fill');
-    const finalEl=postRewardRole(panel,'final');
-    const action=postRewardRole(panel,'action');
-    const small=postRewardClaimSmall(panel);
-    if(fill)fill.style.transform='scaleX(0)';
-    if(finalEl)finalEl.textContent='STOP';
-    if(action)action.textContent='TAP TO STOP';
-    if(small)small.textContent='STOP BONUS';
-  }
-  st.phase='running';
-  startBonusCursor(st);
-  if(manual){
-    Sensory.play('tap');
-    Haptic.pulse('light');
-  }
 }
 function renderBonusCursor(st){
   if(!st)return;
@@ -3789,7 +3695,7 @@ function showPostGameReward(kind,reward,resultSeq){
   const base=postGameRewardBase(reward,kind);
   if(base<=0)return;
   postGameRewardShownSeq=postGameRewardResultSeq;
-  postGameRewardState={open:true,claimed:false,kind,base,mult:null,normalMult:null,offerMult:0,finalCoins:0,normalCoins:0,boostedCoins:0,adLoading:false,adWatched:false,phase:'decision',seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,decisionRaf:0,decisionUntil:0,decisionSeconds:3,lastFrame:0};
+  postGameRewardState={open:true,claimed:false,kind,base,mult:null,normalMult:null,offerMult:0,finalCoins:0,normalCoins:0,boostedCoins:0,adLoading:false,adWatched:false,phase:'running',seq:++postGameRewardSeq,running:false,stopped:false,progress:.02,dir:1,raf:0,tickTimer:0,lastFrame:0};
   hideAllPostRewardPanels();
   const title=postRewardRole(panel,'title');
   const baseEl=postRewardRole(panel,'base');
@@ -3798,10 +3704,10 @@ function showPostGameReward(kind,reward,resultSeq){
   const small=postRewardClaimSmall(panel);
   if(title)title.textContent=kind==='win'?'BOSS BONUS':'RUN BONUS';
   if(baseEl)baseEl.textContent=base;
-  if(finalEl)finalEl.textContent='3';
-  if(action)action.textContent='TAP TO START';
-  if(small)small.textContent='3 SEC READ';
-  panel.className='result-bonus-card show decision';
+  if(finalEl)finalEl.textContent='STOP';
+  if(action)action.textContent='TAP TO STOP';
+  if(small)small.textContent='STOP BONUS';
+  panel.className='result-bonus-card show';
   panel.style.display='flex';
   panel.style.opacity='1';
   panel.style.visibility='visible';
@@ -3815,7 +3721,7 @@ function showPostGameReward(kind,reward,resultSeq){
   if(hostPanel){
     try{ hostPanel.scrollTop = Math.max(0, panel.offsetTop - 12); }catch(e){}
   }
-  startPostRewardDecision(postGameRewardState);
+  startBonusCursor(postGameRewardState);
   const resultPanel=panel.closest('.result-panel');
   if(resultPanel && resultPanel.scrollIntoView){
     try{panel.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
@@ -3968,10 +3874,6 @@ function watchPostGameRewardAd(){
 function claimPostGameReward(mode){
   const st=postGameRewardState;
   if(!st||st.claimed||!playerData){closePostGameReward();return;}
-  if(st.phase==='decision'){
-    finishPostRewardDecision(st,true);
-    return;
-  }
   if(st.running&&!st.stopped){stopPostGameReward();return;}
   if(st.adLoading)return;
   if(mode==='ad'&&!st.adWatched){watchPostGameRewardAd();return;}
@@ -6529,11 +6431,6 @@ function spawnGate(z){
     const leftGood=Math.random()>.5;
     L=leftGood?good:bad; R=leftGood?bad:good;
   }
-  if(profile.allowForcedItems&&Math.random()<riskGateChance()){
-    const risk=makeRiskGate();
-    if(Math.random()>.5)L=risk;
-    else R=risk;
-  }
   const halfW=C.laneW*.47;
   const lx=-halfW/2-.18, rx=halfW/2+.18;
 
@@ -6654,7 +6551,6 @@ function updateGates(cx,cz,t){
 
 function playerGateLabel(type,fallback){
   if(!type)return fallback||'';
-  if(type.t==='double_bad')return 'DANGER';
   return type.lbl||fallback||'';
 }
 
@@ -6695,21 +6591,6 @@ function applyGate(type,gz){
     triggerSecretCrowdWave(type,before,after,gz);
     Sensory.play('gateGood',{combo,mult:true});Haptic.pulse('gateGood');
     ringBurst(cxVar,gz); sparkleRain(cxVar,gz,true);
-  } else if(type.t==='risk'){
-    const before=crowd;
-    const gain=Math.max(1,Math.round((type.v||12)*goodGateGainMultiplier()));
-    crowd=Math.min(9999,crowd+gain);
-    riskDebtThisRun+=Math.max(0,Math.round(type.debt||8));
-    const coinGain=Math.max(0,Math.round(type.coin||35));
-   
-    floatTxt('RISK +'+coinGain, sx, sy, type.tc||'#FFD740', 52, 'spin');
-    combo++; streak++; registerGoodCombo();checkFeverTrigger();awardFeverGateReward(type);
-    burst(cxVar,1,gz,0xFFD740,IS_MOBILE?18:32);
-    sparkleRain(cxVar,gz,true);
-    rebuildFormation();
-    rewardFlash('gold'); uiFeedbackPulse('perfect',560); shake(.34);
-    triggerSecretCrowdWave(type,before,crowd,gz);
-    Sensory.play('gateGood',{combo,mult:true});Haptic.pulse('gateGood');
   } else if(type.t==='sub'){
     const before=Math.max(0,Math.round(crowd||0));
     const kill=Math.min(before,Math.max(0,Math.round((type.v||0)*badGateLossMultiplier())));
@@ -6808,7 +6689,7 @@ function spawnForcedItem(z){
     {t:'sub',v:50,lbl:'-10',col:0xB71C1C,emCol:0xFF3030,good:false},
     {t:'sub',v:100,lbl:'-15',col:0x880000,emCol:0xFF1744,good:false},
     {t:'sub',v:120,lbl:'-20',col:0x3E0000,emCol:0xFF1744,good:false},
-    {t:'double_bad',lbl:'DANGER',col:0x4A148C,emCol:0xEA80FC,good:false},
+    {t:'double_bad',lbl:'/2',col:0x4A148C,emCol:0xEA80FC,good:false},
   ];
   const pool=itemTypes.filter(type=>gateAllowedForProgression(type,profile));
   if(pool.length<2)return;
@@ -7292,8 +7173,7 @@ const BOSS_MINI_PROMPTS=[
   {type:'down',symbol:'↓',instruction:'SWIPE DOWN'},
   {type:'left',symbol:'←',instruction:'SWIPE LEFT'},
   {type:'right',symbol:'→',instruction:'SWIPE RIGHT'},
-  {type:'tap',symbol:'TAP',instruction:'TAP NOW'},
-  {type:'boost',symbol:'GO',instruction:'ANY MOVE'}
+  {type:'tap',symbol:'TAP',instruction:'TAP NOW'}
 ];
 function bossMiniNow(){return performance&&performance.now?performance.now():Date.now();}
 function bossMiniPickPrompt(){
@@ -7419,7 +7299,7 @@ function bossMiniResolvePrompt(result,x,y){
 function handleBossMiniInput(input,x,y){
   if(!bossMiniActive||!bossTapEnabled||gState!=='BOSS'||!bossClashDone||!bossMiniPrompt)return;
   if(input==='short'){bossMiniResolvePrompt('short',x,y);return;}
-  const correct=input===bossMiniPrompt.type || (bossMiniPrompt.type==='boost'&&input!=='short');
+  const correct=input===bossMiniPrompt.type;
   if(!correct){bossMiniResolvePrompt('wrong',x,y);return;}
   const reaction=bossMiniNow()-bossMiniPromptStarted;
   const profile=runDifficultyProfile();
@@ -8341,9 +8221,7 @@ function doWin(){
   const stars=crowd>=250?'RANK SSS':crowd>=90?'RANK SS':crowd>=35?'RANK S':'RANK A';
   document.getElementById('win-title').textContent=dynamicWinTitle(crowd);
   document.getElementById('win-stars').textContent=stars;
-  document.getElementById('win-msg').textContent=survivorResultText(crowd);
   document.getElementById('win-coins').textContent='+'+reward+' COINS';
-  document.getElementById('win-sub').textContent='Level '+currentRunLevel+' complete -> Level '+playerData.level+' unlocked. '+lastFreshnessResultText;
   updateResultWallet('win',walletBefore);
   updateResultRunStreak('win');
   updateResultComboBonus('win');
@@ -8418,7 +8296,6 @@ function finalizeLoss(){
   document.getElementById('over-title').textContent=dynamicLoseTitle();
   document.getElementById('over-msg').innerHTML=msg+'<br>Your coins are saved.';
   document.getElementById('over-coins').textContent='+'+reward+' COINS';
-  document.getElementById('over-sub').textContent='Next fix: '+tip.fix+' - '+lastFreshnessResultText;
   updateResultWallet('over',walletBefore);
   updateResultRunStreak('over');
   updateResultComboBonus('over');

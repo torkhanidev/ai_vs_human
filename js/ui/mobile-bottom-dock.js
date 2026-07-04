@@ -125,6 +125,23 @@
     }
     return null;
   }
+  function nextWorldProgress(worlds,level){
+    worlds=worlds||spaceMapWorlds();
+    level=Math.max(1,Math.round(Number(level)||1));
+    var prev=worlds[0]||null;
+    var next=null;
+    for(var i=0;i<worlds.length;i++){
+      var unlock=worlds[i].unlockLevel||worlds[i].level||1;
+      if(level>=unlock)prev=worlds[i];
+      else{next=worlds[i];break;}
+    }
+    if(!next)return {pct:100,next:null,prev:prev};
+    var prevUnlock=prev?(prev.unlockLevel||prev.level||1):1;
+    var nextUnlock=next.unlockLevel||next.level||1;
+    var span=Math.max(1,nextUnlock-prevUnlock);
+    var pct=Math.max(0,Math.min(100,((level-prevUnlock)/span)*100));
+    return {pct:pct,next:next,prev:prev};
+  }
   function spaceMapRoutePoints(worlds){
     var base=[
       {x:12,y:18},{x:38,y:10},{x:66,y:18},{x:88,y:34},
@@ -464,14 +481,20 @@
     if(!dock)return;
     var show=dockVisible();
     var hasNew=show&&!!pendingNewWorldIdSafe();
+    var worlds=spaceMapWorlds();
+    var progress=nextWorldProgress(worlds,spaceMapLevel());
+    var progressPct=hasNew?100:progress.pct;
     dock.classList.toggle('dock-visible',show);
     dock.classList.toggle('has-new-planet',hasNew);
     dock.setAttribute('aria-hidden',show?'false':'true');
     document.body.classList.toggle('mobile-dock-active',show);
     var mapBtn=document.getElementById('dock-map-btn');
     if(mapBtn){
+      mapBtn.style.setProperty('--dock-map-progress',progressPct.toFixed(2)+'%');
+      mapBtn.style.setProperty('--dock-map-progress-deg',(progressPct*3.6).toFixed(2)+'deg');
+      mapBtn.style.setProperty('--dock-map-ring-opacity',progressPct>0?1:0);
       mapBtn.classList.toggle('has-new-planet',hasNew);
-      mapBtn.setAttribute('aria-label',hasNew?'Map - new planet unlocked':'Map');
+      mapBtn.setAttribute('aria-label',hasNew?'Map - new planet unlocked':(progress.next?'Map - next planet '+Math.round(progressPct)+'%':'Map - all planets unlocked'));
     }
   };
   window.addEventListener('resize',function(){ if(window.syncMobileBottomDock)window.syncMobileBottomDock(); },{passive:true});
