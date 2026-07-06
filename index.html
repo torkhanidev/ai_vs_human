@@ -494,8 +494,47 @@
 </div>
 
 
+<script>
+// External audio links.
+// Put your own MP3/OGG/WAV URLs here. Leave a value empty ("") to keep the built-in generated sound.
+// Local example: "audio/start.mp3"
+window.GAME_AUDIO_LINKS = {
+  musicVolume: 0.45,
+  sfxVolume: 0.85,
+  music: {
+    menu: "",
+    run: "",
+    boss: "",
+    win: "",
+    lose: ""
+  },
+  sfx: {
+    start: "",
+    gateGood: "",
+    gateBad: "",
+    halve: "",
+    coin: "",
+    combo: "",
+    feverStart: "",
+    feverEnd: "",
+    feverBreak: "",
+    milestone: "",
+    danger: "",
+    comeback: "",
+    skin: "",
+    chest: "",
+    reward: "",
+    bossStart: "",
+    bossTap: "",
+    bossWin: "",
+    bossLose: "",
+    deny: "",
+    bad: ""
+  }
+};
+</script>
 <script src="vendor/three.r128.min.js?v=r128"></script>
-<script src="js/core/game.js?v=leader-clean-v140"></script>
+<script src="js/core/game.js?v=external-audio-links-v151"></script>
 <script src="js/ui/mobile-bottom-dock.js?v=kepler22b-name-v137"></script>
 </body>
 </html>

@@ -187,9 +187,110 @@ window.toggleQuality=function(e){PerfMode.toggle(e);};
    V75 SENSORY PACK â€” Web Audio + Mobile Haptics
    Safe: no external files, starts only after user gesture.
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+function gameAudioConfig(){
+  return window.GAME_AUDIO_LINKS&&typeof window.GAME_AUDIO_LINKS==='object'?window.GAME_AUDIO_LINKS:{};
+}
+function cleanAudioUrl(url){
+  return typeof url==='string'?url.trim():'';
+}
+function gameAudioVolume(value,fallback){
+  const n=Number(value);
+  return Number.isFinite(n)?Math.max(0,Math.min(1,n)):fallback;
+}
 const Sensory={
-  ctx:null,master:null,unlocked:false,lastPlay:{},
+  ctx:null,master:null,unlocked:false,lastPlay:{},audioReady:false,sfx:{},music:{},currentMusic:null,currentMusicKey:'',
   get enabled(){return !playerData || !playerData.flags || playerData.flags.sound!==false;},
+  prepareExternalAudio(){
+    if(this.audioReady)return;
+    this.audioReady=true;
+    const cfg=gameAudioConfig();
+    const sfx=cfg.sfx||{};
+    const music=cfg.music||{};
+    Object.keys(sfx).forEach(kind=>{
+      const src=cleanAudioUrl(sfx[kind]);
+      if(!src)return;
+      const a=new Audio(src);
+      a.preload='auto';
+      this.sfx[kind]=a;
+    });
+    Object.keys(music).forEach(kind=>{
+      const src=cleanAudioUrl(music[kind]);
+      if(!src)return;
+      const a=new Audio(src);
+      a.preload='auto';
+      a.loop=true;
+      a.volume=this.musicVolume(kind);
+      this.music[kind]=a;
+    });
+  },
+  sfxVolume(kind){
+    const cfg=gameAudioConfig();
+    const per=cfg.sfxVolumes&&cfg.sfxVolumes[kind]!=null?cfg.sfxVolumes[kind]:cfg.sfxVolume;
+    return gameAudioVolume(per,.85);
+  },
+  musicVolume(kind){
+    const cfg=gameAudioConfig();
+    const per=cfg.musicVolumes&&cfg.musicVolumes[kind]!=null?cfg.musicVolumes[kind]:cfg.musicVolume;
+    return gameAudioVolume(per,.45);
+  },
+  playExternalSfx(kind){
+    this.prepareExternalAudio();
+    const base=this.sfx[kind];
+    if(!base||!base.src)return false;
+    try{
+      const a=base.cloneNode(true);
+      a.volume=this.sfxVolume(kind);
+      a.currentTime=0;
+      const p=a.play();
+      if(p&&p.catch)p.catch(()=>{});
+      return true;
+    }catch(e){return false;}
+  },
+  fallbackMusicKey(kind){
+    if(this.music[kind])return kind;
+    if(kind==='boss'&&this.music.run)return 'run';
+    if((kind==='win'||kind==='lose')&&this.music.menu)return 'menu';
+    return '';
+  },
+  playMusic(kind){
+    this.prepareExternalAudio();
+    if(!this.enabled||!this.unlocked){return false;}
+    const key=this.fallbackMusicKey(kind||'menu');
+    if(!key){this.stopMusic();return false;}
+    const next=this.music[key];
+    if(!next)return false;
+    if(this.currentMusic&&this.currentMusic!==next){
+      try{this.currentMusic.pause();}catch(e){}
+    }
+    this.currentMusic=next;
+    this.currentMusicKey=key;
+    next.loop=true;
+    next.volume=this.musicVolume(key);
+    if(next.paused){
+      const p=next.play();
+      if(p&&p.catch)p.catch(()=>{});
+    }
+    return true;
+  },
+  stopMusic(){
+    if(this.currentMusic){
+      try{this.currentMusic.pause();}catch(e){}
+    }
+    this.currentMusic=null;
+    this.currentMusicKey='';
+  },
+  syncMusic(){
+    if(!this.enabled){this.stopMusic();return;}
+    if(!this.unlocked)return;
+    let key='menu';
+    if(typeof gState!=='undefined'){
+      if(gState==='RUNNING'||gState==='POST_DANCE_RUN')key='run';
+      else if(gState==='BOSS')key='boss';
+      else if(gState==='CELEBRATE'||gState==='WIN')key='win';
+      else if(gState==='GAMEOVER'||gState==='RESURRECT_OFFER')key='lose';
+    }
+    this.playMusic(key);
+  },
   init(){
     if(this.ctx)return true;
     const AC=window.AudioContext||window.webkitAudioContext;
@@ -211,6 +312,7 @@ const Sensory={
     }
     this.unlocked=true;
     this.refreshUI();
+    this.syncMusic();
   },
   refreshUI(){
     const b=document.getElementById('sound-toggle');
@@ -266,6 +368,7 @@ const Sensory={
   play(kind,opts){
     opts=opts||{};
     if(!this.shouldPlay(kind))return;
+    if(this.playExternalSfx(kind))return;
     switch(kind){
       case 'start':
         this.tone(220,440,.18,'triangle',.10);setTimeout(()=>this.tone(330,660,.14,'triangle',.08),70);break;
@@ -307,6 +410,10 @@ const Sensory={
         this.tone(160,50,.48,'sawtooth',.18);this.noise(.22,.05,420);break;
       case 'deny':
         this.tone(180,120,.12,'square',.07);break;
+      case 'reward':
+        this.tone(360,900,.18,'triangle',.11);setTimeout(()=>this.tone(720,1180,.13,'sine',.08),90);break;
+      case 'bad':
+        this.tone(320,90,.20,'sawtooth',.11);this.noise(.10,.035,650);break;
       default:
         this.tone(440,660,.10,'sine',.06);
     }
@@ -334,7 +441,10 @@ function toggleSound(e){
   saveGame();
   Sensory.refreshUI();
   if(playerData.flags.sound){Sensory.unlock();Sensory.play('start');}
-  else if(Sensory.master){try{Sensory.master.gain.setTargetAtTime(0.0001,Sensory.ctx.currentTime,.03);}catch(err){}}
+  else{
+    Sensory.stopMusic();
+    if(Sensory.master){try{Sensory.master.gain.setTargetAtTime(0.0001,Sensory.ctx.currentTime,.03);}catch(err){}}
+  }
 }
 window.Sensory=Sensory;
 window.Haptic=Haptic;
@@ -3152,6 +3262,7 @@ function setScreenMode(mode){
   document.body.classList.toggle('shop-mode',mode==='shop');
   document.body.classList.toggle('result-mode',mode==='result');
   renderFreshnessHUD();
+  if(window.Sensory)Sensory.syncMusic();
 }
 function handleMenuTap(e){
   if(document.getElementById('s-menu').style.display==='none')return;
@@ -7397,6 +7508,7 @@ function beginBoss(cz){
   Sensory.play('bossStart');Haptic.pulse('bossStart');
   ensureRobotMeshes(); // lazy-init robot InstancedMeshes only when boss actually starts
   gState='BOSS';
+  Sensory.syncMusic();
   bossClash=0; bossClashDone=false;
   bossHumanBaseZ=cz;
   bossAIBaseZ=cz+28;
@@ -8192,6 +8304,7 @@ function doWin(){
   const seq=++winSeq;
   Sensory.play('bossWin');Haptic.pulse('bossWin');
   gState='CELEBRATE';
+  Sensory.syncMusic();
   renderFreshnessHUD();
   winDanceStart=elapsed;
   celebrationBurstT=elapsed;
@@ -8266,6 +8379,7 @@ function doLose(){
   const sourceState=gState;
   if(feverActive)endFever('broken');
   gState='GAMEOVER';
+  Sensory.syncMusic();
   renderFreshnessHUD();
   Sensory.play('bossLose');Haptic.pulse('bossLose');
   document.getElementById('boss-hud').style.display='none';
