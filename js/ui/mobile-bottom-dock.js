@@ -486,18 +486,20 @@
     var dock=document.getElementById('mobile-bottom-dock');
     if(!dock)return;
     var show=dockVisible();
-    var hasNew=show&&!!pendingNewWorldIdSafe();
+    var hasNew=!!pendingNewWorldIdSafe();
     var worlds=spaceMapWorlds();
     var progress=nextWorldProgress(worlds,spaceMapLevel());
     var progressPct=hasNew?100:progress.pct;
     if(!show)blurDockFocus(dock);
     dock.classList.toggle('dock-visible',show);
-    dock.classList.toggle('has-new-planet',hasNew);
+    dock.classList.toggle('has-new-planet',show&&hasNew);
     try{dock.inert=!show;}catch(err){}
     dock.setAttribute('aria-hidden',show?'false':'true');
     document.body.classList.toggle('mobile-dock-active',show);
-    var mapBtn=document.getElementById('dock-map-btn');
-    if(mapBtn){
+    var mapBtns=[document.getElementById('dock-map-btn'),document.getElementById('pc-map-btn')];
+    for(var i=0;i<mapBtns.length;i++){
+      var mapBtn=mapBtns[i];
+      if(!mapBtn)continue;
       mapBtn.style.setProperty('--dock-map-progress',progressPct.toFixed(2)+'%');
       mapBtn.style.setProperty('--dock-map-progress-deg',(progressPct*3.6).toFixed(2)+'deg');
       mapBtn.style.setProperty('--dock-map-ring-opacity',progressPct>0?1:0);
