@@ -1,0 +1,452 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   KRAZY KIDS ANIMATIONS - TOP 10 FEATURES
+   Bouncy buttons, rainbow effects, floating scores, wobble text, celebrations!
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. BOUNCY BUTTON ANIMATIONS - Spring physics on hover/click
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.btn, .shop-action, .content-btn, .skin-card, [role="button"], button {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease-out;
+  transform-origin: center;
+}
+
+.btn:hover:not(:disabled),
+.shop-action:hover,
+.content-btn:hover,
+.skin-card:hover,
+[role="button"]:hover,
+button:hover:not(:disabled) {
+  animation: bouncyScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 20px rgba(0, 255, 255, 0.4);
+}
+
+.btn:active:not(:disabled),
+.shop-action:active,
+.content-btn:active,
+[role="button"]:active,
+button:active:not(:disabled) {
+  animation: squash 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bouncyScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1.05); }
+}
+
+@keyframes squash {
+  0% { transform: scale(1.05); }
+  50% { transform: scaleY(0.85) scaleX(1.1); }
+  100% { transform: scale(0.95); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. RAINBOW COLOR PULSE - Periodic rainbow shifts on UI elements
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.rainbow-pulse {
+  animation: rainbowPulse 3s ease-in-out infinite;
+}
+
+#combo-bar .combo-dot.rainbow-pulse {
+  animation: rainbowPulse 3s ease-in-out infinite;
+}
+
+@keyframes rainbowPulse {
+  0% { 
+    color: #FF0080;
+    text-shadow: 0 0 10px #FF0080;
+  }
+  20% { 
+    color: #FF8000;
+    text-shadow: 0 0 10px #FF8000;
+  }
+  40% { 
+    color: #00FF00;
+    text-shadow: 0 0 10px #00FF00;
+  }
+  60% { 
+    color: #00FFFF;
+    text-shadow: 0 0 10px #00FFFF;
+  }
+  80% { 
+    color: #0080FF;
+    text-shadow: 0 0 10px #0080FF;
+  }
+  100% { 
+    color: #FF0080;
+    text-shadow: 0 0 10px #FF0080;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. FLOATING SCORE NUMBERS - Points float up and fade when collected
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.float-score {
+  position: fixed;
+  font-size: 2rem;
+  font-weight: bold;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: floatUp 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  text-shadow: 0 0 10px currentColor, 
+               0 0 20px currentColor,
+               -2px -2px 0 rgba(0, 0, 0, 0.8),
+               2px -2px 0 rgba(0, 0, 0, 0.8),
+               -2px 2px 0 rgba(0, 0, 0, 0.8),
+               2px 2px 0 rgba(0, 0, 0, 0.8);
+}
+
+.float-score.gold { color: #FFD700; }
+.float-score.green { color: #00FF00; }
+.float-score.cyan { color: #00FFFF; }
+.float-score.pink { color: #FF1493; }
+.float-score.purple { color: #DA70D6; }
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1.2);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-60px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(0.8);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. WOBBLE TEXT ANIMATION - Menu text that wiggles to grab attention
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.wobble-text {
+  animation: wobbleText 0.6s ease-in-out infinite;
+  display: inline-block;
+}
+
+h1.wobble-text, h2.wobble-text, .menu-title.wobble-text {
+  animation: wobbleText 0.8s ease-in-out infinite;
+}
+
+@keyframes wobbleText {
+  0%, 100% { transform: skewX(0deg) scaleY(1); }
+  25% { transform: skewX(2deg) scaleY(1.05); }
+  50% { transform: skewX(0deg) scaleY(1); }
+  75% { transform: skewX(-2deg) scaleY(1.05); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. CELEBRATION DANCE - Wacky victory animations
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.celebration-dance {
+  animation: celebrationDance 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+.celebration-spin {
+  animation: celebrationSpin 1s linear infinite;
+}
+
+@keyframes celebrationDance {
+  0% { 
+    transform: rotate(-3deg) translateX(-5px) scaleY(1);
+  }
+  25% { 
+    transform: rotate(3deg) translateX(5px) scaleY(1.1);
+  }
+  50% { 
+    transform: rotate(-3deg) translateX(-5px) scaleY(0.95);
+  }
+  75% { 
+    transform: rotate(3deg) translateX(5px) scaleY(1.1);
+  }
+  100% { 
+    transform: rotate(-3deg) translateX(-5px) scaleY(1);
+  }
+}
+
+@keyframes celebrationSpin {
+  0% { transform: rotateZ(0deg) scale(1); }
+  50% { transform: rotateZ(180deg) scale(1.2); }
+  100% { transform: rotateZ(360deg) scale(1); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. BOUNCING ON LANDING - Character/element bounce with squash
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.bounce-landing {
+  animation: bounceLanding 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounceLanding {
+  0% {
+    transform: scaleY(0.8) scaleX(1.1) translateY(0);
+  }
+  25% {
+    transform: scaleY(1.2) scaleX(0.9) translateY(-30px);
+  }
+  50% {
+    transform: scaleY(0.9) scaleX(1.05) translateY(0);
+  }
+  75% {
+    transform: scaleY(1.1) scaleX(0.95) translateY(-10px);
+  }
+  100% {
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. PULSING STARS - Twinkling stars appear and pulse
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.pulsing-star {
+  animation: pulsingStar 1.5s ease-in-out infinite;
+}
+
+.pulsing-star.fast {
+  animation: pulsingStar 0.8s ease-in-out infinite;
+}
+
+.pulsing-star.slow {
+  animation: pulsingStar 2.5s ease-in-out infinite;
+}
+
+@keyframes pulsingStar {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+    filter: drop-shadow(0 0 2px #FFD700);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 15px #FFD700);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. ANIMATED HEALTH BAR - Dynamic fill with color gradients
+   ───────────────────────────────────────────────────────────────────────────── */
+
+#boss-fill, #prog-fill {
+  background: linear-gradient(90deg, 
+    #00FF00 0%, 
+    #00FF00 50%, 
+    #FFFF00 75%, 
+    #FF6600 100%);
+  background-size: 200% 100%;
+  animation: healthBarShimmer 2s linear infinite;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6),
+              inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+#boss-fill.critical, #prog-fill.critical {
+  animation: healthCritical 0.3s ease-in-out infinite;
+}
+
+@keyframes healthBarShimmer {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes healthCritical {
+  0%, 100% { 
+    filter: brightness(1);
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.6),
+                inset 0 0 10px rgba(255, 0, 0, 0.3);
+  }
+  50% { 
+    filter: brightness(1.3);
+    box-shadow: 0 0 25px rgba(255, 0, 0, 1),
+                inset 0 0 15px rgba(255, 0, 0, 0.5);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. COMBO COUNTER EXPLOSION - Big animated numbers burst on milestone
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.combo-explosion {
+  animation: comboExplode 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#streak-val.combo-explosion {
+  animation: comboExplode 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes comboExplode {
+  0% {
+    transform: scale(0.5) rotate(-15deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.4) rotate(0deg);
+    color: #FFD700;
+    text-shadow: 0 0 30px #FFD700,
+                 0 0 60px #FF00FF;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. GLOWING AURA EFFECTS - Pulsing glow around collectibles
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.glowing-aura {
+  animation: glowingAura 2s ease-in-out infinite;
+}
+
+.glowing-aura-fast {
+  animation: glowingAura 1s ease-in-out infinite;
+}
+
+.glowing-aura.cyan {
+  --glow-color: #00FFFF;
+}
+
+.glowing-aura.pink {
+  --glow-color: #FF1493;
+}
+
+.glowing-aura.green {
+  --glow-color: #00FF00;
+}
+
+.glowing-aura.purple {
+  --glow-color: #DA70D6;
+}
+
+.glowing-aura.gold {
+  --glow-color: #FFD700;
+}
+
+@keyframes glowingAura {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--glow-color, #00FFFF),
+                0 0 20px var(--glow-color, #00FFFF),
+                inset 0 0 10px rgba(255, 255, 255, 0.2);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow-color, #00FFFF),
+                0 0 40px var(--glow-color, #00FFFF),
+                0 0 60px var(--glow-color, #00FFFF),
+                inset 0 0 20px rgba(255, 255, 255, 0.4);
+    filter: brightness(1.2);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BONUS: Utility classes for applying effects
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.shake {
+  animation: screenShake 0.3s ease-in-out;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-5px, -5px); }
+  50% { transform: translate(5px, 5px); }
+  75% { transform: translate(-5px, 5px); }
+}
+
+.pulse-scale {
+  animation: pulseScale 0.4s ease-out;
+}
+
+@keyframes pulseScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.flip-in {
+  animation: flipIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes flipIn {
+  0% { transform: rotateY(90deg); opacity: 0; }
+  100% { transform: rotateY(0deg); opacity: 1; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Krazy Kids Theme Colors
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --krazy-pink: #FF1493;
+  --krazy-cyan: #00FFFF;
+  --krazy-lime: #00FF00;
+  --krazy-purple: #DA70D6;
+  --krazy-orange: #FF8000;
+  --krazy-gold: #FFD700;
+}
+
+/* Apply to combo bar for extra krazy feel */
+#combo-bar {
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.3));
+}
+
+#combo-bar .combo-dot {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#combo-bar .combo-dot.active {
+  animation: comboDotActive 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes comboDotActive {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Victory screen extra polish */
+#s-win.active {
+  animation: winScreenPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes winScreenPop {
+  0% { 
+    transform: scale(0.8) rotate(-5deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Performance & Accessibility
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .float-score { font-size: 1.5rem; }
+  .btn:hover { box-shadow: 0 4px 10px rgba(0, 255, 255, 0.3); }
+}

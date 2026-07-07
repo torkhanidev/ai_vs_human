@@ -218,7 +218,7 @@ const Sensory={
       if(!src)return;
       const a=new Audio(src);
       a.preload='auto';
-      a.loop=true;
+      a.loop=(kind!=='lose');
       a.volume=this.musicVolume(kind);
       this.music[kind]=a;
     });
@@ -264,7 +264,7 @@ const Sensory={
     }
     this.currentMusic=next;
     this.currentMusicKey=key;
-    next.loop=true;
+    next.loop = (key !== 'lose');
     next.volume=this.musicVolume(key);
     if(next.paused){
       const p=next.play();
@@ -282,6 +282,7 @@ const Sensory={
   syncMusic(){
     if(!this.enabled){this.stopMusic();return;}
     if(!this.unlocked)return;
+    if(document.body.classList.contains('shop-mode')){this.stopMusic();return;}
     let key='menu';
     if(typeof gState!=='undefined'){
       if(gState==='RUNNING'||gState==='POST_DANCE_RUN')key='run';
@@ -312,6 +313,7 @@ const Sensory={
     }
     this.unlocked=true;
     this.refreshUI();
+    this.prepareExternalAudio();
     this.syncMusic();
   },
   refreshUI(){
@@ -440,7 +442,7 @@ function toggleSound(e){
   playerData.flags.soundUserSet=true;
   saveGame();
   Sensory.refreshUI();
-  if(playerData.flags.sound){Sensory.unlock();Sensory.play('start');}
+  if(playerData.flags.sound){Sensory.unlock();Sensory.play('start');autoSyncMusic();}
   else{
     Sensory.stopMusic();
     if(Sensory.master){try{Sensory.master.gain.setTargetAtTime(0.0001,Sensory.ctx.currentTime,.03);}catch(err){}}
@@ -449,6 +451,23 @@ function toggleSound(e){
 window.Sensory=Sensory;
 window.Haptic=Haptic;
 window.toggleSound=toggleSound;
+
+// Auto-sync music when game state changes
+let _lastMusicSyncState=null;
+function autoSyncMusic(){
+  const currentState=typeof gState!=='undefined'?gState:'MENU';
+  if(_lastMusicSyncState!==currentState){
+    _lastMusicSyncState=currentState;
+    Sensory.syncMusic();
+  }
+}
+
+// Early initialization: prepare audio system and setup auto-sync
+document.addEventListener('DOMContentLoaded',()=>{
+  Sensory.init();
+  Sensory.prepareExternalAudio();
+});
+
 ['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,()=>Sensory.unlock(),{once:true,passive:true}));
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1575,12 +1594,66 @@ document.addEventListener('pointerdown',e=>{
 },{capture:true,passive:true});
 
 const IS_LOCAL_DEV = location.hostname==='localhost' || location.hostname==='127.0.0.1' || location.search.includes('devmode=true');
+const CrazyGamesIntegration={
+  initPromise:null,
+  ready:false,
+  failed:false,
+  lastGameplay:false,
+  sdk(){
+    try{return window.CrazyGames&&window.CrazyGames.SDK?window.CrazyGames.SDK:null;}catch(e){return null;}
+  },
+  init(){
+    if(this.initPromise)return this.initPromise;
+    const sdk=this.sdk();
+    if(!sdk){
+      this.failed=true;
+      this.initPromise=Promise.resolve(null);
+      return this.initPromise;
+    }
+    this.initPromise=Promise.resolve()
+      .then(()=>typeof sdk.init==='function'?sdk.init():undefined)
+      .then(()=>{
+        this.ready=true;
+        this.failed=false;
+        return sdk;
+      })
+      .catch(err=>{
+        this.ready=false;
+        this.failed=true;
+        console.warn('[CrazyGames] SDK init failed',err);
+        return null;
+      });
+    return this.initPromise;
+  },
+  callGame(method){
+    return this.init().then(sdk=>{
+      try{
+        const game=sdk&&sdk.game;
+        if(game&&typeof game[method]==='function')game[method]();
+      }catch(err){
+        console.warn('[CrazyGames] game.'+method+' failed',err);
+      }
+    });
+  },
+  loadingStart(){return this.callGame('loadingStart');},
+  loadingStop(){return this.callGame('loadingStop');},
+  setGameplay(active){
+    active=!!active;
+    if(this.lastGameplay===active)return;
+    this.lastGameplay=active;
+    return this.callGame(active?'gameplayStart':'gameplayStop');
+  },
+  happytime(){return this.callGame('happytime');}
+};
+window.CrazyGamesIntegration=CrazyGamesIntegration;
+CrazyGamesIntegration.loadingStart();
 const AdManager={
   watchedThisSession:0,
   lastAdTime:0,
   intent:'',
   MAX_ADS_PER_SESSION:5,
   MIN_GAP_BETWEEN_ADS:60000,
+  adRequestActive:false,
   canShow(){
     const now=Date.now();
     return this.watchedThisSession<this.MAX_ADS_PER_SESSION && (now-this.lastAdTime)>this.MIN_GAP_BETWEEN_ADS;
@@ -1590,15 +1663,35 @@ const AdManager={
     this.lastAdTime=Date.now();
   },
   muted:false,
+  masterGainBefore:null,
+  musicVolumeBefore:null,
   muteAudio(){
     if(this.muted)return;
     this.muted=true;
-    try{if(Sensory.master)Sensory.master.gain.value=0.0001;}catch(e){}
+    try{
+      if(Sensory.master){
+        this.masterGainBefore=Sensory.master.gain.value;
+        Sensory.master.gain.value=0.0001;
+      }
+      if(Sensory.currentMusic){
+        this.musicVolumeBefore=Sensory.currentMusic.volume;
+        Sensory.currentMusic.volume=0;
+      }
+    }catch(e){}
   },
   restoreAudio(){
     if(!this.muted)return;
     this.muted=false;
-    try{if(Sensory.master)Sensory.master.gain.value=0.22;}catch(e){}
+    try{
+      if(Sensory.master){
+        Sensory.master.gain.value=this.masterGainBefore==null?0.22:this.masterGainBefore;
+      }
+      if(Sensory.currentMusic){
+        Sensory.currentMusic.volume=this.musicVolumeBefore==null?Sensory.musicVolume(Sensory.currentMusicKey):this.musicVolumeBefore;
+      }
+    }catch(e){}
+    this.masterGainBefore=null;
+    this.musicVolumeBefore=null;
   }
 };
 const REWARDED_AD_SECONDS=3;
@@ -1659,48 +1752,111 @@ function hideRewardedAdOverlay(reset){
     overlay.setAttribute('aria-hidden','true');
   }
 }
+function getCrazyGamesSdk(){
+  return CrazyGamesIntegration.sdk();
+}
+function getCrazyGamesAdApi(){
+  try{
+    const sdk=getCrazyGamesSdk();
+    if(!sdk||!sdk.ad||typeof sdk.ad.requestAd!=='function')return null;
+    return sdk.ad;
+  }catch(e){
+    return null;
+  }
+}
 function showRewardedAd(opts){
   opts=opts||{};
   AdManager.intent=opts.context||'unknown';
+  if(AdManager.adRequestActive){
+    hideRewardedAdOverlay();
+    if(opts.onFail)opts.onFail('ad_in_progress');
+    return;
+  }
   if(!AdManager.canShow()){
     hideRewardedAdOverlay();
     if(opts.onFail)opts.onFail('frequency_limit');
     return;
   }
+  AdManager.adRequestActive=true;
+  let settled=false;
+  let safetyTimer=0;
+  const settle=(fn)=>{
+    if(settled)return;
+    settled=true;
+    if(safetyTimer)clearTimeout(safetyTimer);
+    fn();
+  };
   const complete=()=>{
-    AdManager.record();
-    AdManager.restoreAudio();
-    hideRewardedAdOverlay();
-    if(opts.onComplete)opts.onComplete();
+    settle(()=>{
+      AdManager.adRequestActive=false;
+      AdManager.record();
+      AdManager.restoreAudio();
+      hideRewardedAdOverlay();
+      if(opts.onComplete)opts.onComplete();
+    });
   };
   const fail=(reason)=>{
-    AdManager.restoreAudio();
-    hideRewardedAdOverlay();
-    if(opts.onFail)opts.onFail(reason||'ad_error');
+    settle(()=>{
+      AdManager.adRequestActive=false;
+      AdManager.restoreAudio();
+      hideRewardedAdOverlay();
+      if(opts.onFail)opts.onFail(reason||'ad_error');
+    });
   };
-  const sdk=window.CrazyGames&&window.CrazyGames.SDK;
-  if(sdk&&sdk.ad&&typeof sdk.ad.requestAd==='function'){
-    AdManager.muteAudio();
-    showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
+  safetyTimer=setTimeout(()=>fail('ad_timeout'),20000);
+  CrazyGamesIntegration.init().then(sdk=>{
+    const adApi=sdk&&sdk.ad&&typeof sdk.ad.requestAd==='function'?sdk.ad:null;
+    if(adApi){
+      try{
+        adApi.requestAd('rewarded',{
+          adStarted:()=>{
+            AdManager.muteAudio();
+            showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
+          },
+          adFinished:complete,
+          adError:()=>fail('ad_error')
+        });
+      }catch(e){
+        fail('ad_exception');
+      }
+      return;
+    }
+    if(IS_LOCAL_DEV){
+      AdManager.muteAudio();
+      showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
+      setTimeout(complete,REWARDED_AD_SECONDS*1000);
+    }else{
+      fail('sdk_unavailable');
+    }
+  }).catch(()=>fail('sdk_unavailable'));
+}
+function requestMidgameAd(context){
+  if(AdManager.adRequestActive)return;
+  CrazyGamesIntegration.init().then(sdk=>{
+    const adApi=sdk&&sdk.ad&&typeof sdk.ad.requestAd==='function'?sdk.ad:null;
+    if(!adApi)return;
+    AdManager.adRequestActive=true;
     try{
-      sdk.ad.requestAd('rewarded',{
-        adStarted:()=>showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS),
-        adFinished:complete,
-        adError:()=>fail('ad_error')
+      adApi.requestAd('midgame',{
+        adStarted:()=>AdManager.muteAudio(),
+        adFinished:()=>{
+          AdManager.adRequestActive=false;
+          AdManager.restoreAudio();
+        },
+        adError:()=>{
+          AdManager.adRequestActive=false;
+          AdManager.restoreAudio();
+        }
       });
-    }catch(e){fail('ad_exception');}
-    return;
-  }
-  if(IS_LOCAL_DEV){
-    AdManager.muteAudio();
-    showRewardedAdOverlay(opts.context,REWARDED_AD_SECONDS);
-    setTimeout(complete,REWARDED_AD_SECONDS*1000);
-  }else{
-    fail('sdk_unavailable');
-  }
+    }catch(e){
+      AdManager.adRequestActive=false;
+      AdManager.restoreAudio();
+    }
+  }).catch(()=>{});
 }
 window.AdManager=AdManager;
 window.showRewardedAd=showRewardedAd;
+window.requestMidgameAd=requestMidgameAd;
 
 function addCoins(amount,sourceOrOptions){
   if(!playerData)return 0;
@@ -3261,8 +3417,9 @@ function setScreenMode(mode){
   document.body.classList.toggle('playing-mode',mode==='play');
   document.body.classList.toggle('shop-mode',mode==='shop');
   document.body.classList.toggle('result-mode',mode==='result');
+  if(window.CrazyGamesIntegration)CrazyGamesIntegration.setGameplay(mode==='play');
   renderFreshnessHUD();
-  if(window.Sensory)Sensory.syncMusic();
+  if(window.Sensory && mode!=='shop')Sensory.syncMusic();
 }
 function handleMenuTap(e){
   if(document.getElementById('s-menu').style.display==='none')return;
@@ -3284,7 +3441,7 @@ function openShop(){
   selectedSkinId=playerData.skins.equipped;
   renderShop();
 }
-function closeShop(){setScreenMode('menu');gState='MENU';document.getElementById('s-shop').style.display='none';document.getElementById('s-menu').style.display='flex';refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)setTimeout(()=>MenuGameplayPreview.ensure(),0);}
+function closeShop(){setScreenMode('menu');gState='MENU';Sensory.syncMusic();document.getElementById('s-shop').style.display='none';document.getElementById('s-menu').style.display='flex';refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)setTimeout(()=>MenuGameplayPreview.ensure(),0);}
 function rarityColor(r){return RARITY_COLORS[r]||'#fff';}
 function shortCoinAmount(v){
   const n=Math.max(0,Math.round(num(v,0)));
@@ -3837,8 +3994,6 @@ function showPostGameReward(kind,reward,resultSeq){
   if(resultPanel && resultPanel.scrollIntoView){
     try{panel.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
   }
-  Sensory.play('reward');
-  Haptic.pulse('reward');
 }
 function postGameRewardBurst(){
   const st=postGameRewardState;
@@ -4149,6 +4304,7 @@ function continueToMenu(){
   postGameRewardShownSeq=0;
   clearRewardLadder('win');clearRewardLadder('over');
   gState='MENU';
+  Sensory.syncMusic();
   setScreenMode('menu');
   document.getElementById('s-win').style.display='none';document.getElementById('s-over').style.display='none';document.getElementById('s-shop').style.display='none';document.getElementById('s-win').classList.remove('active');document.getElementById('s-over').classList.remove('active');
   document.getElementById('s-menu').style.display='flex';refreshMetaUI();checkDailyRewardAuto();
@@ -8229,6 +8385,7 @@ function showResurrectOffer(){
   const btn=document.getElementById('resurrect-watch-btn');
   if(btn){btn.textContent='WATCH AD';btn.classList.remove('loading');btn.disabled=false;}
   gState='RESURRECT_OFFER';
+  Sensory.syncMusic();
   setResurrectOfferVisible(true);
   startResurrectDecisionTimer(RESURRECT_DECISION_SECONDS);
   Sensory.play('reward');
@@ -8273,6 +8430,7 @@ function executeResurrect(){
   resurrectOfferState=null;
   closeResurrectOffer();
   gState='RUNNING';
+  Sensory.syncMusic();
   setScreenMode('play');
   crowd=30;
   peak=Math.max(peak||0,crowd);
@@ -8362,6 +8520,7 @@ function doWin(){
   setTimeout(()=>{
     if(seq!==winSeq||gState!=='POST_DANCE_RUN')return;
     gState='WIN';
+    Sensory.syncMusic();
     captureTrialSkinResult();
     setScreenMode('result');
     document.getElementById('s-win').style.display='flex';
@@ -8400,6 +8559,7 @@ function doLose(){
 }
 function finalizeLoss(){
   gState='GAMEOVER';
+  Sensory.syncMusic();
   closeResurrectOffer();
   const reward=grantRunReward(false);
   const walletBefore=Math.max(0,playerData.coins-reward);
@@ -8858,6 +9018,11 @@ document.addEventListener('pointerdown',e=>{
   const tone=bossMiniActive?'boss':(gState==='RUNNING'||gState==='BOSS')?'run':'ui';
   showScreenTouch(e.clientX,e.clientY,tone);
 },{capture:true,passive:true});
+document.addEventListener('click',e=>{
+  if(gState==='RUNNING'||gState==='BOSS')return;
+  const ui=e.target.closest('button,.btn,.meta-pill,.side-btn,.shop-action,.content-btn,.dev-tools-btn,.daily-card,.skin-card,.result-close-hook,.result-coins,.result-wallet,.next-run-goal-card,.space-map-close,.world-unlock-btn,.mobile-dock-btn,.resurrect-watch,.resurrect-skip,.result-bonus-claim,.result-ad-watch,.shop-back,.skin-reveal-ad-btn,.skin-reveal-coin-btn,.chest-claim-btn,.skin-try-btn,.space-planet,.space-preview-action');
+  if(ui&&window.Sensory)window.Sensory.play('clic');
+},{passive:true});
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    INPUT
@@ -9014,6 +9179,7 @@ function startGame(){
   hideWorldUnlockCinematic();
   clearRewardLadder('win');clearRewardLadder('over');
   gState='RUNNING';
+  Sensory.syncMusic();
   setScreenMode('play');
   document.getElementById('s-menu').style.display='none';
   document.getElementById('s-shop').style.display='none';
@@ -9226,6 +9392,7 @@ const DevTools={
   },
   showMenu(){
     gState='MENU';
+    Sensory.syncMusic();
     setScreenMode('menu');
     ['s-shop','s-over','s-win'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     const menu=document.getElementById('s-menu');
@@ -9364,3 +9531,4 @@ DramaFX.init();
 
 
 setScreenMode('menu');loadGame();applyWorldTheme(selectedWorldDef(),false);initCrowd();applyEquippedSkin();initInput();initBossTapZone();refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)MenuGameplayPreview.ensure();loop();
+CrazyGamesIntegration.loadingStop();

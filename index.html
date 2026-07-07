@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=milestones-v160">
 <link rel="stylesheet" href="css/90-late-overrides.css?v=shop-skins-clean-v139">
+<link rel="stylesheet" href="css/95-krazy-kids-animations.css?v=krazy-top-10">
 </head>
 <body>
 <div id="hud">
@@ -499,14 +500,14 @@
 // Put your own MP3/OGG/WAV URLs here. Leave a value empty ("") to keep the built-in generated sound.
 // Local example: "audio/start.mp3"
 window.GAME_AUDIO_LINKS = {
-  musicVolume: 0.45,
+  musicVolume: 0.25,
   sfxVolume: 0.85,
   music: {
-    menu: "",
+    menu: "sound_effect/menu.mp3",
     run: "",
     boss: "",
-    win: "",
-    lose: ""
+    win: "sound_effect/gift.mp3",
+    lose: "sound_effect/lost1.mp3"
   },
   sfx: {
     start: "",
@@ -522,19 +523,68 @@ window.GAME_AUDIO_LINKS = {
     danger: "",
     comeback: "",
     skin: "",
-    chest: "",
+    chest: "sound_effect/gift.mp3",
     reward: "",
     bossStart: "",
     bossTap: "",
     bossWin: "",
     bossLose: "",
     deny: "",
-    bad: ""
+    bad: "",
+    clic: ""
   }
 };
 </script>
 <script src="vendor/three.r128.min.js?v=r128"></script>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <script src="js/core/game.js?v=external-audio-links-v151"></script>
+<script src="js/krazy-animations-helper.js?v=krazy-top-10"></script>
 <script src="js/ui/mobile-bottom-dock.js?v=kepler22b-name-v137"></script>
+<script>
+  window.testCrazyGamesSDK = function () {
+    const statusEl = document.getElementById('dev-status');
+    const setStatus = (text) => {
+      if (statusEl) statusEl.textContent = text;
+      console.log('[CrazyGames SDK]', text);
+    };
+
+    const init = window.CrazyGamesIntegration && typeof window.CrazyGamesIntegration.init === 'function'
+      ? window.CrazyGamesIntegration.init()
+      : Promise.resolve(window.CrazyGames && window.CrazyGames.SDK ? window.CrazyGames.SDK : null);
+
+    setStatus('Initializing CrazyGames SDK...');
+    return init.then((sdk) => {
+      const userApi = sdk && sdk.user ? sdk.user : null;
+      if (!userApi || typeof userApi.getUser !== 'function') {
+        setStatus('CrazyGames SDK unavailable here. Game ads will fall back safely in local dev.');
+        return { ok: false, reason: 'user_api_missing' };
+      }
+
+      setStatus('Testing CrazyGames SDK user access...');
+      return userApi.getUser();
+    })
+      .then((user) => {
+        if (user && user.ok === false) return user;
+        const label = user && (user.username || user.id || user.name || user.displayName)
+          ? 'CrazyGames user ready: ' + (user.username || user.id || user.name || user.displayName)
+          : 'CrazyGames user ready';
+        setStatus(label);
+        console.log('[CrazyGames SDK] getUser() resolved', user);
+        return { ok: true, user };
+      })
+      .catch((err) => {
+        const reason = err && err.message ? err.message : String(err || 'unknown_error');
+        setStatus('CrazyGames SDK test failed: ' + reason);
+        console.warn('[CrazyGames SDK] getUser() failed', err);
+        return { ok: false, reason, error: err };
+      });
+  };
+
+  // Initialize Krazy Animations when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    window.testCrazyGamesSDK().catch(() => {});
+    window.initKrazyAnimations();
+  });
+</script>
 </body>
 </html>
