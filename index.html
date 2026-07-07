@@ -540,9 +540,9 @@ window.GAME_AUDIO_LINKS = {
 </script>
 <script src="vendor/three.r128.min.js?v=r128"></script>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<script src="js/core/game.js?v=external-audio-links-v152"></script>
+<script src="js/core/game.js?v=external-audio-links-v153"></script>
 <script src="js/krazy-animations-helper.js?v=krazy-top-10"></script>
-<script src="js/ui/mobile-bottom-dock.js?v=kepler22b-name-v137"></script>
+<script src="js/ui/mobile-bottom-dock.js?v=kepler22b-name-v138"></script>
 <script>
   window.testCrazyGamesSDK = function () {
     const statusEl = document.getElementById('dev-status');
@@ -554,12 +554,20 @@ window.GAME_AUDIO_LINKS = {
     const init = window.CrazyGamesIntegration && typeof window.CrazyGamesIntegration.init === 'function'
       ? window.CrazyGamesIntegration.init()
       : Promise.resolve(window.CrazyGames && window.CrazyGames.SDK ? window.CrazyGames.SDK : null);
+    const isSdkDisabled = (err) => !!(
+      (window.CrazyGamesIntegration && window.CrazyGamesIntegration.disabled) ||
+      (err && (err.code === 'sdkDisabled' || /CrazySDK is disabled/i.test(String(err.message || err))))
+    );
 
     setStatus('Initializing CrazyGames SDK...');
     return init.then((sdk) => {
+      if (isSdkDisabled()) {
+        setStatus('CrazyGames SDK is disabled on this domain. Ads will work on CrazyGames.');
+        return { ok: false, reason: 'sdk_disabled' };
+      }
       const userApi = sdk && sdk.user ? sdk.user : null;
       if (!userApi || typeof userApi.getUser !== 'function') {
-        setStatus('CrazyGames SDK unavailable here. Game ads will fall back safely in local dev.');
+        setStatus('CrazyGames SDK unavailable here. Game ads will work on CrazyGames.');
         return { ok: false, reason: 'user_api_missing' };
       }
 
@@ -576,6 +584,11 @@ window.GAME_AUDIO_LINKS = {
         return { ok: true, user };
       })
       .catch((err) => {
+        if (isSdkDisabled(err)) {
+          setStatus('CrazyGames SDK is disabled on this domain. Ads will work on CrazyGames.');
+          console.log('[CrazyGames SDK] Disabled on this domain');
+          return { ok: false, reason: 'sdk_disabled' };
+        }
         const reason = err && err.message ? err.message : String(err || 'unknown_error');
         setStatus('CrazyGames SDK test failed: ' + reason);
         console.warn('[CrazyGames SDK] getUser() failed', err);

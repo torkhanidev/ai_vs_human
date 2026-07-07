@@ -304,7 +304,8 @@ const Sensory={
       return true;
     }catch(e){return false;}
   },
-  unlock(){
+  unlock(e){
+    if(e&&e.isTrusted===false)return;
     if(!this.enabled)return;
     if(!this.init())return;
     if(this.ctx.state==='suspended')this.ctx.resume().catch(()=>{});
@@ -325,6 +326,7 @@ const Sensory={
   },
   shouldPlay(kind,minGap){
     if(!this.enabled)return false;
+    if(!this.unlocked)return false;
     if(!this.init())return false;
     if(this.ctx.state==='suspended')this.ctx.resume().catch(()=>{});
     if(this.master && this.master.gain.value<.05){
@@ -442,7 +444,7 @@ function toggleSound(e){
   playerData.flags.soundUserSet=true;
   saveGame();
   Sensory.refreshUI();
-  if(playerData.flags.sound){Sensory.unlock();Sensory.play('start');autoSyncMusic();}
+  if(playerData.flags.sound){Sensory.unlock(e);Sensory.play('start');autoSyncMusic();}
   else{
     Sensory.stopMusic();
     if(Sensory.master){try{Sensory.master.gain.setTargetAtTime(0.0001,Sensory.ctx.currentTime,.03);}catch(err){}}
@@ -462,13 +464,19 @@ function autoSyncMusic(){
   }
 }
 
-// Early initialization: prepare audio system and setup auto-sync
+// Prepare external audio without creating WebAudio before the first real gesture.
 document.addEventListener('DOMContentLoaded',()=>{
-  Sensory.init();
   Sensory.prepareExternalAudio();
 });
 
-['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,()=>Sensory.unlock(),{once:true,passive:true}));
+function handleFirstAudioGesture(e){
+  if(e&&e.isTrusted===false)return;
+  Sensory.unlock(e);
+  if(Sensory.unlocked){
+    ['pointerdown','touchstart','keydown'].forEach(ev=>window.removeEventListener(ev,handleFirstAudioGesture,true));
+  }
+}
+['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,handleFirstAudioGesture,{capture:true,passive:true}));
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    STATE
@@ -1598,9 +1606,13 @@ const CrazyGamesIntegration={
   initPromise:null,
   ready:false,
   failed:false,
+  disabled:false,
   lastGameplay:false,
   sdk(){
     try{return window.CrazyGames&&window.CrazyGames.SDK?window.CrazyGames.SDK:null;}catch(e){return null;}
+  },
+  isDisabledError(err){
+    return !!(err&&(err.code==='sdkDisabled'||/CrazySDK is disabled/i.test(String(err.message||err))));
   },
   init(){
     if(this.initPromise)return this.initPromise;
@@ -1613,14 +1625,23 @@ const CrazyGamesIntegration={
     this.initPromise=Promise.resolve()
       .then(()=>typeof sdk.init==='function'?sdk.init():undefined)
       .then(()=>{
+        const env=String(sdk&&sdk.environment?sdk.environment:'').toLowerCase();
+        if(env==='disabled'){
+          this.ready=false;
+          this.failed=false;
+          this.disabled=true;
+          return null;
+        }
         this.ready=true;
         this.failed=false;
+        this.disabled=false;
         return sdk;
       })
       .catch(err=>{
         this.ready=false;
-        this.failed=true;
-        console.warn('[CrazyGames] SDK init failed',err);
+        this.failed=!this.isDisabledError(err);
+        this.disabled=this.isDisabledError(err);
+        if(!this.disabled)console.warn('[CrazyGames] SDK init failed',err);
         return null;
       });
     return this.initPromise;
@@ -1631,6 +1652,10 @@ const CrazyGamesIntegration={
         const game=sdk&&sdk.game;
         if(game&&typeof game[method]==='function')game[method]();
       }catch(err){
+        if(this.isDisabledError(err)){
+          this.disabled=true;
+          return;
+        }
         console.warn('[CrazyGames] game.'+method+' failed',err);
       }
     });

@@ -13,7 +13,13 @@
   function dockVisible(){
     return active() && menuVisible();
   }
-  function stop(e){if(e){e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();}}
+  function stop(e){if(e){e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();}blurDockFocus(document.getElementById('mobile-bottom-dock'));}
+  function blurDockFocus(dock){
+    try{
+      var activeEl=document.activeElement;
+      if(dock&&activeEl&&dock.contains(activeEl)&&activeEl.blur)activeEl.blur();
+    }catch(err){}
+  }
   window.isMobileBottomDockActive=active;
   window.dockStartGame=function(e){
     stop(e);
@@ -484,8 +490,10 @@
     var worlds=spaceMapWorlds();
     var progress=nextWorldProgress(worlds,spaceMapLevel());
     var progressPct=hasNew?100:progress.pct;
+    if(!show)blurDockFocus(dock);
     dock.classList.toggle('dock-visible',show);
     dock.classList.toggle('has-new-planet',hasNew);
+    try{dock.inert=!show;}catch(err){}
     dock.setAttribute('aria-hidden',show?'false':'true');
     document.body.classList.toggle('mobile-dock-active',show);
     var mapBtn=document.getElementById('dock-map-btn');
