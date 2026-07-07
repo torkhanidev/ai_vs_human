@@ -1227,6 +1227,7 @@ const SKIN_TRAITS={
   omega_prime:{name:'Omega Balance',desc:'Good gates, defense, and rewards all improve.',goodBonus:.08,badReduction:.08,rewardMult:1.06}
 };
 let playerData=null;
+let bootLocalSaveData=null;
 let selectedSkinId='default';
 let lastRunReward=0,lastRunWin=false,runRewardGranted=false,currentRunLevel=1;
 let lastRunStreakBefore=0,lastRunStreakAfter=0,lastRunStreakBonusCoins=0,lastRunStreakMultiplier=1,lastRunStreakBroken=false;
@@ -1252,6 +1253,40 @@ function readFirstSave(){
     }catch(e){}
   }
   return{key:null,data:null};
+}
+function parseSaveRaw(raw){
+  if(!raw)return null;
+  try{
+    const data=JSON.parse(raw);
+    return data&&typeof data==='object'?data:null;
+  }catch(e){return null;}
+}
+function saveProgressScore(data){
+  data=data&&typeof data==='object'?data:{};
+  const ownedSkins=data.skins&&Array.isArray(data.skins.owned)?data.skins.owned:[];
+  const skinValue=ownedSkins.reduce((sum,id)=>{
+    const s=SKINS.find(x=>x.id===id);
+    return sum+(s?Math.max(1000,num(s.price,0)):0);
+  },0);
+  const stats=data.stats||{};
+  return Math.max(1,num(data.level,1))*1000000000+
+    Math.max(0,num(data.bestCrowd,0))*1000000+
+    Math.max(0,num(stats.wins,0))*100000+
+    Math.max(0,num(stats.runs,0))*10000+
+    skinValue+
+    Math.max(0,num(data.coins,0));
+}
+function saveUpdatedAt(data){
+  return Math.max(0,Math.round(num(data&&data.meta&&data.meta.updatedAt,0)));
+}
+function betterSaveSource(localData,remoteData){
+  if(!remoteData)return'local';
+  if(!localData)return'remote';
+  const localScore=saveProgressScore(localData);
+  const remoteScore=saveProgressScore(remoteData);
+  if(remoteScore>localScore)return'remote';
+  if(localScore>remoteScore)return'local';
+  return saveUpdatedAt(remoteData)>saveUpdatedAt(localData)?'remote':'local';
 }
 function num(v,fallback=0){v=Number(v);return Number.isFinite(v)?v:fallback;}
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -1449,7 +1484,8 @@ function sanitizeData(data){
   if(typeof clean.flags.sound!=='boolean')clean.flags.sound=true;
   if(typeof clean.flags.haptic!=='boolean')clean.flags.haptic=true;
   clean.meta=Object.assign({},base.meta,data.meta||{});
-  clean.meta.updatedAt=Date.now();
+  clean.meta.createdAt=Math.max(0,Math.round(num(clean.meta.createdAt,base.meta.createdAt)));
+  clean.meta.updatedAt=Math.max(0,Math.round(num(clean.meta.updatedAt,base.meta.updatedAt)));
   clean.skins=Object.assign({},base.skins,data.skins||{});
   let owned=Array.isArray(clean.skins.owned)?clean.skins.owned.slice():['default'];
   owned=owned.filter((id,i,arr)=>SKINS.some(s=>s.id===id)&&arr.indexOf(id)===i);
@@ -1465,12 +1501,16 @@ function seedUnlockedWorldsForCurrentLevel(){
     if((playerData.level||1)>=w.level)playerData.content.unlockedWorlds[w.id]=true;
   }
 }
-function loadGame(){
-  const found=readFirstSave();
-  playerData=sanitizeData(found.data||freshData());
+function applyPlayerSaveData(data){
+  playerData=sanitizeData(data||freshData());
   seedUnlockedWorldsForCurrentLevel();
   ensureNextRunGoal();
   selectedSkinId=playerData.skins.equipped;
+}
+function loadGame(){
+  const found=readFirstSave();
+  bootLocalSaveData=found.data||null;
+  applyPlayerSaveData(found.data||freshData());
   // Save once under the V19 key so old V13-V17 saves migrate safely.
   saveGame();
 }
@@ -1479,7 +1519,9 @@ function saveGame(){
     if(!playerData)return;
     playerData=sanitizeData(playerData);
     playerData.meta.updatedAt=Date.now();
-    localStorage.setItem(SAVE_KEY,JSON.stringify(playerData));
+    const raw=JSON.stringify(playerData);
+    localStorage.setItem(SAVE_KEY,raw);
+    if(window.CrazyCloudSave)window.CrazyCloudSave.saveRaw(raw);
   }catch(e){}
 }
 function resetMetaProgress(){
@@ -1672,6 +1714,172 @@ const CrazyGamesIntegration={
 };
 window.CrazyGamesIntegration=CrazyGamesIntegration;
 CrazyGamesIntegration.loadingStart();
+
+const CrazyCloudSave={
+  key:SAVE_KEY,
+  ready:false,
+  loading:false,
+  disabled:false,
+  warned:false,
+  pendingRaw:'',
+  bootPromise:null,
+  data(){
+    const sdk=CrazyGamesIntegration.sdk();
+    return sdk&&sdk.data?sdk.data:null;
+  },
+  handleError(action,err){
+    const code=err&&err.code?String(err.code):'';
+    if(CrazyGamesIntegration.isDisabledError(err)||code==='dataModuleDisabled'){
+      this.disabled=true;
+      if(!this.warned&&code==='dataModuleDisabled'){
+        console.warn('[CrazyGames] Data module disabled. Enable the Progress Save option for SDK Data in the CrazyGames submission flow.');
+      }
+    }else if(!this.warned){
+      console.warn('[CrazyGames] data.'+action+' failed',err);
+    }
+    this.warned=true;
+  },
+  saveRaw(raw){
+    if(!raw&&playerData)raw=JSON.stringify(playerData);
+    if(!raw)return false;
+    this.pendingRaw=raw;
+    if(this.disabled||this.loading||!this.ready)return false;
+    const data=this.data();
+    if(!data||typeof data.setItem!=='function')return false;
+    try{
+      data.setItem(this.key,raw);
+      this.pendingRaw='';
+      return true;
+    }catch(err){
+      this.handleError('setItem',err);
+      return false;
+    }
+  },
+  applyRemote(remoteData){
+    applyPlayerSaveData(remoteData);
+    const raw=JSON.stringify(playerData);
+    this.pendingRaw=raw;
+    try{localStorage.setItem(SAVE_KEY,raw);}catch(e){}
+    currentRunLevel=playerData.level||1;
+    applyEquippedSkin();
+    refreshMetaUI();
+    if(window.MenuGameplayPreview){
+      MenuGameplayPreview.invalidate();
+      setTimeout(()=>MenuGameplayPreview.ensure(),0);
+    }
+  },
+  init(){
+    if(this.bootPromise)return this.bootPromise;
+    this.loading=true;
+    this.bootPromise=CrazyGamesIntegration.init().then(sdk=>{
+      const data=sdk&&sdk.data;
+      if(!data||typeof data.getItem!=='function'||typeof data.setItem!=='function')return null;
+      let remoteData=null;
+      try{
+        remoteData=parseSaveRaw(data.getItem(this.key));
+      }catch(err){
+        this.handleError('getItem',err);
+        return null;
+      }
+      const currentLocal=playerData||parseSaveRaw(localStorage.getItem(SAVE_KEY))||freshData();
+      const bootLocal=bootLocalSaveData||currentLocal;
+      const localData=saveProgressScore(currentLocal)>saveProgressScore(bootLocal)?currentLocal:bootLocal;
+      if(remoteData&&betterSaveSource(localData,remoteData)==='remote'){
+        this.applyRemote(remoteData);
+      }
+      this.ready=!this.disabled;
+      return remoteData;
+    }).catch(err=>{
+      this.handleError('init',err);
+      return null;
+    }).finally(()=>{
+      this.loading=false;
+      if(this.ready&&!this.disabled){
+        const raw=this.pendingRaw||(playerData?JSON.stringify(playerData):'');
+        if(raw)this.saveRaw(raw);
+      }
+    });
+    return this.bootPromise;
+  },
+  syncAfterAuth(){
+    this.bootPromise=null;
+    this.ready=false;
+    this.disabled=false;
+    return this.init();
+  }
+};
+window.CrazyCloudSave=CrazyCloudSave;
+
+const CrazyPlayerAccount={
+  user:null,
+  bootPromise:null,
+  listenerAdded:false,
+  displayName(){
+    const u=this.user||{};
+    return String(u.username||u.name||u.displayName||'GUEST').trim()||'GUEST';
+  },
+  refreshUI(){
+    const name=this.displayName();
+    const nameEl=document.getElementById('ui-player-name');
+    const pill=document.getElementById('player-account-pill');
+    if(nameEl)nameEl.textContent=name;
+    if(pill){
+      pill.classList.toggle('guest',!this.user);
+      pill.title=this.user?'CrazyGames account: '+name:'CrazyGames guest account';
+    }
+  },
+  init(){
+    if(this.bootPromise)return this.bootPromise;
+    this.refreshUI();
+    this.bootPromise=CrazyGamesIntegration.init().then(sdk=>{
+      const userApi=sdk&&sdk.user;
+      if(!userApi||typeof userApi.getUser!=='function'){
+        this.user=null;
+        this.refreshUI();
+        return null;
+      }
+      if(!this.listenerAdded&&typeof userApi.addAuthListener==='function'){
+        this.listenerAdded=true;
+        userApi.addAuthListener(user=>{
+          this.user=user||null;
+          this.refreshUI();
+          if(window.CrazyCloudSave)CrazyCloudSave.syncAfterAuth();
+        });
+      }
+      return Promise.resolve(userApi.getUser()).then(user=>{
+        this.user=user||null;
+        this.refreshUI();
+        return this.user;
+      });
+    }).catch(err=>{
+      if(!CrazyGamesIntegration.isDisabledError(err))console.warn('[CrazyGames] user.getUser failed',err);
+      this.user=null;
+      this.refreshUI();
+      return null;
+    });
+    return this.bootPromise;
+  },
+  signIn(e){
+    if(e&&e.stopPropagation)e.stopPropagation();
+    return CrazyGamesIntegration.init().then(sdk=>{
+      const userApi=sdk&&sdk.user;
+      if(!userApi||typeof userApi.showAuthPrompt!=='function')return this.init();
+      return Promise.resolve(userApi.showAuthPrompt()).then(user=>{
+        this.user=user||this.user;
+        this.refreshUI();
+        if(window.CrazyCloudSave)CrazyCloudSave.syncAfterAuth();
+        return this.user;
+      }).catch(err=>{
+        if(err&&err.code!=='userCancelled'&&err.code!=='userAlreadySignedIn'&&!CrazyGamesIntegration.isDisabledError(err)){
+          console.warn('[CrazyGames] auth prompt failed',err);
+        }
+        return this.init();
+      });
+    });
+  }
+};
+window.CrazyPlayerAccount=CrazyPlayerAccount;
+window.showCrazyGamesLogin=function(e){return CrazyPlayerAccount.signIn(e);};
 const AdManager={
   watchedThisSession:0,
   lastAdTime:0,
@@ -9288,5 +9496,5 @@ function resetState(){
 DramaFX.init();
 
 
-setScreenMode('menu');loadGame();applyWorldTheme(selectedWorldDef(),false);initCrowd();applyEquippedSkin();initInput();initBossTapZone();refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)MenuGameplayPreview.ensure();loop();
+setScreenMode('menu');loadGame();CrazyPlayerAccount.init();CrazyCloudSave.init();applyWorldTheme(selectedWorldDef(),false);initCrowd();applyEquippedSkin();initInput();initBossTapZone();refreshMetaUI();checkDailyRewardAuto();if(window.MenuGameplayPreview)MenuGameplayPreview.ensure();loop();
 CrazyGamesIntegration.loadingStop();

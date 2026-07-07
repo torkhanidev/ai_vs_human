@@ -5168,3 +5168,38 @@ body.boss-mini-focus #boss-tap-zone.active,
   justify-content:center;
   align-self:stretch;
 }
+
+/* CrazyGames account name in the menu meta bar. */
+#player-account-pill.player-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  max-width:178px;
+  min-width:96px;
+  border:none;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#player-account-pill .player-label{
+  color:rgba(255,255,255,.56);
+  font-size:10px;
+  letter-spacing:.08em;
+}
+#ui-player-name{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#player-account-pill.guest{
+  opacity:.72;
+}
+@media(max-width:760px){
+  #player-account-pill.player-pill{
+    max-width:132px;
+    min-width:82px;
+  }
+  #player-account-pill .player-label{
+    display:none;
+  }
+}
