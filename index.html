@@ -14,9 +14,9 @@
 <link rel="stylesheet" href="css/20-skins-textures-fx.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/30-skin-fx-overrides.css?v=boss-reflex-ui-v150">
 <link rel="stylesheet" href="css/40-content-missions-chest-world.css?v=boss-reflex-ui-v150">
-<link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=boss-reflex-ui-v150">
-<link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=milestones-v160">
-<link rel="stylesheet" href="css/90-late-overrides.css?v=shop-skins-clean-v140">
+<link rel="stylesheet" href="css/50-stable-performance-final-polish.css?v=no-devtools-v151">
+<link rel="stylesheet" href="css/60-responsive-devtools-v87.css?v=no-devtools-v161">
+<link rel="stylesheet" href="css/90-late-overrides.css?v=no-devtools-v141">
 <link rel="stylesheet" href="css/95-krazy-kids-animations.css?v=krazy-top-10">
 </head>
 <body>
@@ -83,7 +83,6 @@
 <div id="phase-flash"></div>
 <div id="reward-flash"></div>
 <div id="vignette"></div>
-<div class="debug-safe-badge">BOSS REFLEX UI</div>
 <div id="milestone-banner">
   <div class="m-txt" id="m-txt"></div>
   <div class="m-sub" id="m-sub"></div>
@@ -435,69 +434,6 @@
 </div>
 
 
-<div id="dev-open-pill" title="Open developer test tools">DEV</div>
-<div id="dev-tools" aria-label="Developer test tools">
-  <div class="dev-head">
-    <div class="dev-title">DEV TOOLS</div>
-    <div class="dev-chip" id="dev-state-chip">MENU</div>
-    <button class="dev-close" data-dev-action="close" title="Close">x</button>
-  </div>
-  <div class="dev-body">
-    <div class="dev-section">
-      <div class="dev-section-title">Live state <span class="dev-readout" id="dev-live-readout">loading</span></div>
-      <div class="dev-grid">
-        <input id="dev-level-input" type="number" min="1" value="1" title="Level">
-        <input id="dev-coins-input" type="number" min="0" value="0" title="Coins">
-        <input id="dev-crowd-input" type="number" min="1" value="100" title="Crowd">
-      </div>
-    </div>
-
-    <div class="dev-section">
-      <div class="dev-section-title">Progress / economy</div>
-      <div class="dev-grid">
-        <button class="dev-tools-btn blue" data-dev-action="set-level">SET LEVEL</button>
-        <button class="dev-tools-btn gold" data-dev-action="set-coins">SET COINS</button>
-        <button class="dev-tools-btn green" data-dev-action="set-crowd">SET CROWD</button>
-        <button class="dev-tools-btn dark" data-dev-action="level-down">LVL -1</button>
-        <button class="dev-tools-btn dark" data-dev-action="level-up">LVL +1</button>
-        <button class="dev-tools-btn gold" data-dev-action="coins-10k">+10K</button>
-        <button class="dev-tools-btn gold" data-dev-action="coins-100k">+100K</button>
-        <button class="dev-tools-btn red" data-dev-action="reset-save">RESET SAVE</button>
-      </div>
-    </div>
-
-    <div class="dev-section">
-      <div class="dev-section-title">Skins</div>
-      <div class="dev-grid">
-        <button class="dev-tools-btn green" data-dev-action="unlock-skins">UNLOCK ALL</button>
-        <button class="dev-tools-btn purple" data-dev-action="equip-shadow">EQUIP SHADOW</button>
-        <button class="dev-tools-btn blue" data-dev-action="shop">OPEN SHOP</button>
-      </div>
-    </div>
-
-
-    <div class="dev-section">
-      <div class="dev-section-title">World themes</div>
-      <div class="dev-grid worlds" id="dev-world-buttons"></div>
-    </div>
-
-    <div class="dev-section">
-      <div class="dev-section-title">Gameplay tests</div>
-      <div class="dev-grid">
-        <button class="dev-tools-btn green" data-dev-action="start-run">START RUN</button>
-        <button class="dev-tools-btn purple" data-dev-action="boss-now">BOSS NOW</button>
-        <button class="dev-tools-btn dark" data-dev-action="menu">MENU</button>
-        <button class="dev-tools-btn green" data-dev-action="win-now">WIN NOW</button>
-        <button class="dev-tools-btn red" data-dev-action="lose-now">LOSE NOW</button>
-        <button class="dev-tools-btn blue" data-dev-action="reward-flash">FLASH FX</button>
-      </div>
-    </div>
-
-    <div class="dev-status" id="dev-status">Press F2 or the DEV pill to open/close. Changes are saved in localStorage.</div>
-  </div>
-</div>
-
-
 <script>
 // External audio links.
 // Put your own MP3/OGG/WAV URLs here. Leave a value empty ("") to keep the built-in generated sound.
@@ -540,12 +476,12 @@ window.GAME_AUDIO_LINKS = {
 </script>
 <script src="vendor/three.r128.min.js?v=r128"></script>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<script src="js/core/game.js?v=external-audio-links-v153"></script>
+<script src="js/core/game.js?v=external-audio-links-v155"></script>
 <script src="js/krazy-animations-helper.js?v=krazy-top-10"></script>
 <script src="js/ui/mobile-bottom-dock.js?v=kepler22b-name-v138"></script>
 <script>
   window.testCrazyGamesSDK = function () {
-    const statusEl = document.getElementById('dev-status');
+    const statusEl = null;
     const setStatus = (text) => {
       if (statusEl) statusEl.textContent = text;
       console.log('[CrazyGames SDK]', text);

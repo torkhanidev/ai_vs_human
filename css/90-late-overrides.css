@@ -2214,71 +2214,6 @@ body.post-reward-pending .result-panel>.result-row{
   #s-over .result-world .world-next-hint{font-size:9px !important}
 }
 
-/* V114 - quiet developer trigger: available for testing without polluting game UI */
-#dev-open-pill{
-  left:8px !important;
-  bottom:8px !important;
-  width:30px !important;
-  height:24px !important;
-  border-radius:10px !important;
-  padding:0 !important;
-  font-size:0 !important;
-  letter-spacing:0 !important;
-  opacity:.18 !important;
-  transform:translateZ(0) !important;
-  transition:width .16s ease,opacity .16s ease,filter .16s ease,box-shadow .16s ease !important;
-  box-shadow:0 6px 16px rgba(0,0,0,.24),0 0 10px rgba(0,229,255,.14) !important;
-}
-#dev-open-pill::before{
-  content:"D";
-  display:grid;
-  place-items:center;
-  width:100%;
-  height:100%;
-  font-size:11px;
-  font-weight:900;
-  letter-spacing:0;
-}
-#dev-open-pill:hover,
-#dev-open-pill:focus-visible{
-  width:58px !important;
-  opacity:.96 !important;
-  filter:brightness(1.06) !important;
-}
-#dev-open-pill:hover::before,
-#dev-open-pill:focus-visible::before{
-  content:"DEV";
-  font-size:13px;
-  letter-spacing:.08em;
-}
-body.playing-mode #dev-open-pill,
-body.result-mode #dev-open-pill{
-  opacity:.10 !important;
-}
-body.dev-tools-open #dev-open-pill,
-#dev-open-pill.hide{
-  display:none !important;
-}
-@media(max-width:760px){
-  #dev-open-pill{
-    left:6px !important;
-    bottom:6px !important;
-    width:24px !important;
-    height:20px !important;
-    border-radius:8px !important;
-    opacity:.12 !important;
-  }
-  #dev-open-pill::before{font-size:9px}
-  #dev-open-pill:hover,
-  #dev-open-pill:focus-visible{
-    width:44px !important;
-  }
-  #dev-open-pill:hover::before,
-  #dev-open-pill:focus-visible::before{
-    font-size:11px;
-  }
-}
-
 /* V115 - mobile dock state + 2-button grid alignment */
 .mobile-bottom-dock{
   display:none !important;
@@ -2470,17 +2405,6 @@ body.dev-tools-open #dev-open-pill,
 @keyframes bossTapRipple{
   0%{transform:scale(.78);opacity:1}
   100%{transform:scale(1.15);opacity:.18}
-}
-
-/* V119 - hide build badge from player-facing UI; reveal only during dev tools */
-.debug-safe-badge{
-  display:none !important;
-}
-body.dev-tools-open .debug-safe-badge{
-  display:block !important;
-  right:8px !important;
-  bottom:8px !important;
-  opacity:.38 !important;
 }
 
 /* V120 - visible boss mini fail budget */

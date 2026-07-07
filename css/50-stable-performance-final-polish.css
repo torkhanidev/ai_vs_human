@@ -1,6 +1,6 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    V17 STABLE ARCHITECTURE â€” SAFE SAVE / MANAGERS / PERFORMANCE FLAGS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-.season-chip{position:relative}.season-chip::after{content:"FINAL TUNE";display:block;font-size:8px;letter-spacing:.11em;color:rgba(255,255,255,.62);margin-top:2px}.debug-safe-badge{position:fixed;right:10px;bottom:10px;z-index:9;pointer-events:none;font-size:9px;font-weight:900;color:rgba(255,255,255,.34);letter-spacing:.12em}
+.season-chip{position:relative}.season-chip::after{content:"FINAL TUNE";display:block;font-size:8px;letter-spacing:.11em;color:rgba(255,255,255,.62);margin-top:2px}
 .sound-pill{border:none;cursor:pointer;font-family:'Rajdhani',Impact,Arial,sans-serif;pointer-events:auto;transition:transform .12s,opacity .18s,filter .18s}.sound-pill:active{transform:scale(.94)}.sound-pill.sound-off{opacity:.58;filter:grayscale(.8)}.perf-pill{min-width:72px;color:#69F0AE!important}.perf-pill.perf-hd{color:#FFD740!important}.perf-pill.perf-lite{color:#80D8FF!important}
 

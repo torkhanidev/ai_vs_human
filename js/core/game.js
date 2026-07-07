@@ -1507,7 +1507,7 @@ function appendCoinFxNode(node){
 const CoinFX={
   lastClickEl:null,
   lastClickAt:0,
-  clickSelectors:'.skin-card,.shop-action,.content-btn,.dev-tools-btn,.daily-card,.chest-card,.result-coins,.result-goal,.result-daily-challenge,.result-combo,.result-close-hook,.result-chest,.result-wallet,.meta-pill,.side-btn,.shop-tab,.next-run-goal-card',
+  clickSelectors:'.skin-card,.shop-action,.content-btn,.daily-card,.chest-card,.result-coins,.result-goal,.result-daily-challenge,.result-combo,.result-close-hook,.result-chest,.result-wallet,.meta-pill,.side-btn,.shop-tab,.next-run-goal-card',
   remember(el){
     if(!el)return;
     this.lastClickEl=el;
@@ -1545,7 +1545,7 @@ const CoinFX={
   },
   pulse(el,cls){
     if(!el)return;
-    const target=el.closest('.result-wallet,.meta-pill,.skin-card,.shop-action,.dev-tools-btn,.content-btn,.side-btn')||el;
+    const target=el.closest('.result-wallet,.meta-pill,.skin-card,.shop-action,.content-btn,.side-btn')||el;
     target.classList.remove(cls||'coin-flow-pop');
     void target.offsetWidth;
     target.classList.add(cls||'coin-flow-pop');
@@ -6114,7 +6114,7 @@ const LeaderStyle={
 };
 window.LeaderStyle=LeaderStyle;
 const LeaderStyleUI={
-  toggle(e){if(e)e.stopPropagation();LeaderStyle.load();LeaderStyle.syncUI();document.getElementById('dev-tools')?.classList.add('open');document.getElementById('dev-open-pill')?.classList.add('hide');},
+  toggle(e){if(e)e.stopPropagation();LeaderStyle.load();LeaderStyle.syncUI();},
   close(e){if(e)e.stopPropagation();},
   input(k,v,e){if(e)e.stopPropagation();LeaderStyle.set(k,v);},
   preset(name,e){if(e)e.stopPropagation();LeaderStyle.applyPreset(name);},
@@ -9057,7 +9057,7 @@ document.addEventListener('pointerdown',e=>{
 },{capture:true,passive:true});
 document.addEventListener('click',e=>{
   if(gState==='RUNNING'||gState==='BOSS')return;
-  const ui=e.target.closest('button,.btn,.meta-pill,.side-btn,.shop-action,.content-btn,.dev-tools-btn,.daily-card,.skin-card,.result-close-hook,.result-coins,.result-wallet,.next-run-goal-card,.space-map-close,.world-unlock-btn,.mobile-dock-btn,.resurrect-watch,.resurrect-skip,.result-bonus-claim,.result-ad-watch,.shop-back,.skin-reveal-ad-btn,.skin-reveal-coin-btn,.chest-claim-btn,.skin-try-btn,.space-planet,.space-preview-action');
+  const ui=e.target.closest('button,.btn,.meta-pill,.side-btn,.shop-action,.content-btn,.daily-card,.skin-card,.result-close-hook,.result-coins,.result-wallet,.next-run-goal-card,.space-map-close,.world-unlock-btn,.mobile-dock-btn,.resurrect-watch,.resurrect-skip,.result-bonus-claim,.result-ad-watch,.shop-back,.skin-reveal-ad-btn,.skin-reveal-coin-btn,.chest-claim-btn,.skin-try-btn,.space-planet,.space-preview-action');
   if(ui&&window.Sensory)window.Sensory.play('clic');
 },{passive:true});
 
@@ -9285,285 +9285,6 @@ function resetState(){
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   DEV TEST BAR â€” safe local testing helpers
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const DevTools={
-  open:false,
-  lastMessage:'Ready',
-  log(msg){
-    this.lastMessage=msg||'Ready';
-    const el=document.getElementById('dev-status');
-    if(el)el.textContent=this.lastMessage;
-    if(typeof floatTxt==='function')floatTxt(this.lastMessage,innerWidth*.5,innerHeight*.18,'#FFD740',26,'boom');
-  },
-  ensure(){
-    if(!playerData)loadGame();
-    return !!playerData;
-  },
-  save(){
-    if(!this.ensure())return;
-    saveGame();
-    refreshMetaUI();
-    this.refresh();
-  },
-  setOpen(v){
-    this.open=!!v;
-    const panel=document.getElementById('dev-tools');
-    const pill=document.getElementById('dev-open-pill');
-    document.body.classList.toggle('dev-tools-open',this.open);
-    if(panel)panel.classList.toggle('open',this.open);
-    if(pill)pill.classList.toggle('hide',this.open);
-    this.refresh();
-  },
-  toggle(){this.setOpen(!this.open);},
-  num(id,fallback){
-    const el=document.getElementById(id);
-    const v=el?Number(el.value):fallback;
-    return Number.isFinite(v)?v:fallback;
-  },
-  setInput(id,value){
-    const el=document.getElementById(id);
-    if(!el||document.activeElement===el)return;
-    el.value=value;
-  },
-  refresh(){
-    const chip=document.getElementById('dev-state-chip');
-    if(chip)chip.textContent=gState||'MENU';
-    if(!playerData)return;
-    this.setInput('dev-level-input',playerData.level||1);
-    this.setInput('dev-coins-input',playerData.coins||0);
-    this.setInput('dev-crowd-input',Math.max(1,Math.round(crowd||startingCrowdCount())));
-    const world=worldDefByLevel(currentRunLevel || playerData.level || 1);
-    const read=document.getElementById('dev-live-readout');
-    if(read)read.textContent='LVL '+(playerData.level||1)+' - '+(playerData.coins||0)+' coins - '+(world?world.name:'theme');
-},
-  setLevel(level){
-    if(!this.ensure())return;
-    playerData.level=Math.max(1,Math.round(Number(level)||1));
-    currentRunLevel=playerData.level;
-    ensureNextRunGoal();
-    saveGame();
-    applyWorldTheme(selectedWorldDef(),true);
-    refreshMetaUI();
-    this.refresh();
-    this.log('Level set to '+playerData.level);
-  },
-  setCoins(coins){
-    if(!this.ensure())return;
-    const before=Math.max(0,Math.round(playerData.coins||0));
-    const trigger=CoinFX.freshClick(2000)||document.getElementById('dev-coins-input');
-    playerData.coins=Math.max(0,Math.round(Number(coins)||0));
-    const after=Math.max(0,Math.round(playerData.coins||0));
-    saveGame();
-    refreshMetaUI();
-    if(after>before)CoinFX.gain(after-before,trigger);
-    if(before>after)CoinFX.spend(before-after,trigger);
-    this.refresh();
-    this.log('Coins set to '+playerData.coins);
-  },
-  addCoins(amount){
-    if(!this.ensure())return;
-    addCoins(amount,CoinFX.freshClick(2000)||document.getElementById('dev-tools'));
-    saveGame();
-    refreshMetaUI();
-    rewardFlash('gold');
-    this.refresh();
-    this.log('Added '+amount+' coins');
-  },
-  setCrowd(value){
-    if(!this.ensure())return;
-    const n=Math.max(1,Math.round(Number(value)||1));
-    crowd=n;peak=Math.max(peak||0,n);
-    if(gState==='BOSS'){
-      rebuildBossHumanFormation();
-    }else if(gState==='RUNNING'||gState==='CELEBRATE'||gState==='POST_DANCE_RUN'){
-      rebuildFormation();
-    }
-    updateHUD();
-    this.refresh();
-    this.log('Crowd set to '+n);
-  },
-  unlockSkins(){
-    if(!this.ensure())return;
-    playerData.skins.owned=SKINS.map(s=>s.id);
-    saveGame();
-    refreshMetaUI();
-    renderShop();
-    rewardFlash('gold');
-    this.refresh();
-    this.log('All skins unlocked');
-  },
-  equipSkin(id){
-    if(!this.ensure())return;
-    unlockSkin(id);
-    equipSkin(id);
-    saveGame();
-    applyEquippedSkin();
-    refreshMetaUI();
-    renderShop();
-    this.refresh();
-    this.log('Equipped '+skinById(id).name);
-  },
-  applyWorld(id,unlock){
-    if(!this.ensure())return;
-    const w=WORLD_DEFS.find(x=>x.id===id);
-    if(!w)return;
-    if(unlock){
-      playerData.level=Math.max(playerData.level||1,w.level);
-      currentRunLevel=playerData.level;
-      saveGame();
-      refreshMetaUI();
-    }
-    if(worldIsUnlocked(w,playerData.level)){
-      const res=selectWorldTheme(w.id);
-      this.refresh();
-      this.log((unlock?'Unlocked ':'Selected ')+w.name);
-      return res;
-    }else{
-      currentRunLevel=w.level;
-    }
-    applyWorldTheme(w,true);
-    this.refresh();
-    this.log('Theme: '+w.name);
-  },
-  showMenu(){
-    gState='MENU';
-    Sensory.syncMusic();
-    setScreenMode('menu');
-    ['s-shop','s-over','s-win'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-    const menu=document.getElementById('s-menu');
-    if(menu)menu.style.display='flex';
-    const boss=document.getElementById('boss-hud');if(boss)boss.style.display='none';
-    hideClashCounters();
-    refreshMetaUI();
-    if(window.MenuGameplayPreview){
-      MenuGameplayPreview.invalidate();
-      requestAnimationFrame(()=>MenuGameplayPreview.ensure());
-      setTimeout(()=>MenuGameplayPreview.ensure(),80);
-    }
-    this.refresh();
-    this.log('Back to menu');
-  },
-  startRun(){
-    startGame();
-    this.refresh();
-    this.log('Run started');
-  },
-  bossNow(){
-    if(gState!=='RUNNING'&&gState!=='BOSS')startGame();
-    this.setCrowd(this.num('dev-crowd-input',Math.max(150,crowd||150)));
-    goodChoices=Math.max(goodChoices,5);
-    badChoices=0;
-    beginBoss(dist+26);
-    this.refresh();
-    this.log('Boss test started');
-  },
-  winNow(){
-    if(gState!=='RUNNING'&&gState!=='BOSS')startGame();
-    this.setCrowd(this.num('dev-crowd-input',Math.max(180,crowd||180)));
-    goodChoices=Math.max(goodChoices,5);
-    badChoices=0;
-    if(!runStats)runStats={good:0,bad:0,orbs:0,dodges:0,risk:0,comeback:0};
-    const dailyInfo=(typeof ensureDailyChallengeState==='function')?ensureDailyChallengeState():null;
-    const dailyStat=dailyInfo&&dailyInfo.challenge?dailyInfo.challenge.stat:'';
-    if(dailyStat==='good'||dailyStat==='cleanGood')runStats.good=Math.max(runStats.good||0,dailyInfo.challenge.targetValue||5);
-    if(dailyStat==='orbs')runStats.orbs=Math.max(runStats.orbs||0,dailyInfo.challenge.targetValue||10);
-    if(dailyStat==='dodges')runStats.dodges=Math.max(runStats.dodges||0,dailyInfo.challenge.targetValue||2);
-    if(dailyStat==='risk')runStats.risk=Math.max(runStats.risk||0,dailyInfo.challenge.targetValue||1);
-    if(dailyStat==='comeback')runStats.comeback=Math.max(runStats.comeback||0,dailyInfo.challenge.targetValue||1);
-    if(dailyStat==='combo')maxComboThisRun=Math.max(maxComboThisRun,dailyInfo.challenge.targetValue||5);
-    if(dailyStat==='crowd')peak=Math.max(peak||0,dailyInfo.challenge.targetValue||crowd||180);
-    if(dailyStat==='distance')dist=Math.max(dist,(C&&C.bossDist?C.bossDist:520));
-    if(gState!=='BOSS')beginBoss(dist+22);
-    doWin();
-    this.refresh();
-    this.log('Win result test');
-  },
-  loseNow(){
-    if(gState!=='RUNNING'&&gState!=='BOSS')startGame();
-    crowd=Math.max(0,Math.min(crowd,3));
-    peak=Math.max(peak||0,crowd);
-    doLose();
-    this.refresh();
-    this.log('Lose result test');
-  },
-  resetSave(){
-    if(!confirm('Reset all local test progress?'))return;
-    resetMetaProgress();
-    currentRunLevel=playerData.level;
-    applyWorldTheme(selectedWorldDef(),true);
-    this.refresh();
-    this.log('Save reset');
-  },
-  renderWorldButtons(){
-    const wrap=document.getElementById('dev-world-buttons');
-    if(!wrap||!Array.isArray(WORLD_DEFS))return;
-    wrap.innerHTML='';
-    WORLD_DEFS.forEach(w=>{
-      const btn=document.createElement('button');
-      btn.className='dev-tools-btn dark';
-      btn.textContent=w.name.toUpperCase()+' - LVL '+w.level;
-      btn.style.borderColor=w.color+'88';
-      btn.style.boxShadow='inset 0 0 12px '+w.color+'22';
-      btn.setAttribute('data-dev-world',w.id);
-      wrap.appendChild(btn);
-    });
-  },
-  handle(action){
-    if(!action)return;
-    if(action==='close')return this.setOpen(false);
-    if(action==='set-level')return this.setLevel(this.num('dev-level-input',1));
-    if(action==='set-coins')return this.setCoins(this.num('dev-coins-input',0));
-    if(action==='set-crowd')return this.setCrowd(this.num('dev-crowd-input',100));
-    if(action==='level-down')return this.setLevel((playerData?playerData.level:1)-1);
-    if(action==='level-up')return this.setLevel((playerData?playerData.level:1)+1);
-    if(action==='coins-10k')return this.addCoins(10000);
-    if(action==='coins-100k')return this.addCoins(100000);
-    if(action==='unlock-skins')return this.unlockSkins();
-    if(action==='equip-shadow')return this.equipSkin('shadow');
-    if(action==='shop')return openShop(),this.log('Shop opened'),this.refresh();
-    if(action==='start-run')return this.startRun();
-    if(action==='boss-now')return this.bossNow();
-    if(action==='menu')return this.showMenu();
-    if(action==='win-now')return this.winNow();
-    if(action==='lose-now')return this.loseNow();
-    if(action==='reward-flash')return rewardFlash('gold'),shake(.45),showMilestone('FX TEST','flash + shake'),this.log('FX tested');
-    if(action==='reset-save')return this.resetSave();
-  },
-  install(){
-    const panel=document.getElementById('dev-tools');
-    const pill=document.getElementById('dev-open-pill');
-    if(panel){
-      ['click','mousedown','mouseup','touchstart','touchmove','touchend'].forEach(ev=>{
-        panel.addEventListener(ev,e=>e.stopPropagation(),{passive:false});
-      });
-      panel.addEventListener('click',e=>{
-        const worldBtn=e.target.closest('[data-dev-world]');
-        if(worldBtn){this.applyWorld(worldBtn.getAttribute('data-dev-world'),e.shiftKey);return;}
-        const btn=e.target.closest('[data-dev-action]');
-        if(btn){CoinFX.remember(btn);this.handle(btn.getAttribute('data-dev-action'));}
-      });
-    }
-    if(pill){
-      ['click','mousedown','mouseup','touchstart','touchend'].forEach(ev=>{
-        pill.addEventListener(ev,e=>{e.stopPropagation(); if(ev==='click'||ev==='touchend')this.toggle();},{passive:false});
-      });
-    }
-    document.addEventListener('keydown',e=>{
-      if(e.key==='F2'||e.key==='`'){
-        e.preventDefault();
-        this.toggle();
-      }
-    });
-    this.renderWorldButtons();
-    setInterval(()=>{ if(this.open) this.refresh(); },700); // poll only when panel visible
-    this.refresh();
-  }
-};
-window.DevTools=DevTools;
-
-DevTools.install();
 DramaFX.init();
 
 
