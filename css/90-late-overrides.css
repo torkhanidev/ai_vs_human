@@ -4381,7 +4381,7 @@ body.shop-mode #s-shop{
   white-space:nowrap !important;
 }
 #s-shop .skin-card.locked .price-tag{
-  bottom:24px !important;
+  bottom:3px !important;
 }
 #s-shop .skin-try-btn{
   bottom:3px !important;
@@ -4389,6 +4389,40 @@ body.shop-mode #s-shop{
   min-height:18px !important;
   padding:2px 8px !important;
   font-size:8px !important;
+}
+#s-shop .shop-detail-action-row{
+  width:100%;
+  display:flex;
+  align-items:stretch;
+  gap:9px;
+}
+#s-shop .shop-detail-action-row .shop-action{
+  flex:1 1 auto;
+  min-width:0;
+}
+#s-shop .shop-detail-action-row .skin-try-btn{
+  position:static !important;
+  left:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  flex:0 0 auto;
+  min-width:70px !important;
+  min-height:0 !important;
+  padding:0 14px !important;
+  border-radius:22px !important;
+  font-size:13px !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
+}
+#s-shop .shop-detail-action-row .skin-try-btn:active{
+  transform:scale(.96) !important;
+}
+#s-shop .shop-detail-action-row .skin-try-btn.locked{
+  background:linear-gradient(135deg,#00E5FF,#B388FF) !important;
+  color:#020817 !important;
+  box-shadow:0 0 16px rgba(0,229,255,.30),inset 0 0 10px rgba(255,255,255,.25) !important;
 }
 #s-shop .lock-big{
   font-size:13px !important;
@@ -5177,4 +5211,36 @@ body.boss-mini-focus #boss-tap-zone.active,
   #s-win .result-row .btn{
     padding:10px 9px !important;
   }
+}
+
+/* Selected locked skin: keep TRY beside the locked shop action. */
+#s-shop .shop-detail-action-row{
+  width:100% !important;
+  display:flex !important;
+  align-items:stretch !important;
+  gap:9px !important;
+}
+#s-shop .shop-detail-action-row #skin-action{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+}
+#s-shop .shop-detail-action-row #skin-try-action.skin-try-btn{
+  position:static !important;
+  left:auto !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  flex:0 0 74px !important;
+  width:74px !important;
+  min-width:74px !important;
+  min-height:auto !important;
+  padding:0 12px !important;
+  border-radius:22px !important;
+  font-size:13px !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
 }

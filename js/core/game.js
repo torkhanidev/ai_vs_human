@@ -3598,12 +3598,12 @@ function renderShop(){
     setColorAlphaVars(card,'skinGlow',s.glow,[.36,.42,.70]);
     card.onclick=()=>{CoinFX.remember(card);selectedSkinId=s.id;renderShop();};
     const price=s.price>0?`<div class="price-tag">${owned?'OWNED':shortCoinAmount(s.price)}</div>`:'';
-    const tryBtn=!owned&&s.price>0?`<button class="skin-try-btn" type="button" onclick="event.stopPropagation();trySkinForRun('${s.id}')">TRY</button>`:'';
-    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" data-fx="${s.fx||s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}${tryBtn}`;
+    card.innerHTML=`<div class="rarity-tag" style="background:${rarityColor(s.rarity)}33;color:${rarityColor(s.rarity)}">${s.rarity[0]}</div><div class="skin-avatar skin-${s.id}" data-fx="${s.fx||s.id}" style="--skinColor:${s.body};--skinGlow:${s.glow};background:linear-gradient(160deg,${s.accent},${s.body} 64%,#050512)"><span class="texture-layer"></span></div>${owned?'':'<div class="lock-big">LOCK</div>'}${equipped?'<div class="equipped-badge">ON</div>':''}${price}`;
     grid.appendChild(card);
   }
   const s=skinById(selectedSkinId),owned=ownsSkin(s.id),equipped=playerData.skins.equipped===s.id;
   const n=document.getElementById('skin-detail-name'),d=document.getElementById('skin-detail-desc'),a=document.getElementById('skin-action');
+  const tryAction=document.getElementById('skin-try-action');
   if(n)n.textContent=s.name;
     if(d)d.textContent=s.rarity+' - '+s.desc+' Passive: '+(activeSkinTrait(s.id).desc||'Fresh style only.')+(owned?'':' - '+skinPriceLabel(s.price));
   const big=document.getElementById('big-skin-preview'),stage=document.getElementById('big-skin-stage'),rar=document.getElementById('skin-rarity-big');
@@ -3622,7 +3622,19 @@ function renderShop(){
     else if(playerData.coins>=s.price){a.textContent='BUY '+skinPriceLabel(s.price);}
     else{a.textContent='NEED '+skinPriceLabel(s.price-playerData.coins);a.classList.add('locked');}
   }
+  if(tryAction){
+    const canTry=!owned&&s.price>0;
+    tryAction.style.display=canTry?'inline-flex':'none';
+    tryAction.disabled=!canTry;
+    tryAction.classList.toggle('locked',canTry&&playerData.coins<s.price);
+    tryAction.setAttribute('aria-label','Try '+s.name+' for one run');
+  }
 }
+function trySelectedSkinForRun(){
+  const s=skinById(selectedSkinId);
+  if(s)trySkinForRun(s.id);
+}
+window.trySelectedSkinForRun=trySelectedSkinForRun;
 function skinAction(){
   const s=skinById(selectedSkinId);if(!s)return;
   if(playerData.skins.equipped===s.id)return;
